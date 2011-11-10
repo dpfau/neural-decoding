@@ -12,7 +12,7 @@ function [A B C D x0 s] = moesp( y, u, i, N, proj, eps )
 l = size( y, 1 );
 m = size( u, 1 );
 
-% Project the columns of Y or Yf onto the appropriate subspace
+%% Project the columns of Y or Yf onto the appropriate subspace
 if strcmpi( proj, 'oblique' );
     Y = block_hankel( y, 1, 2*i, N );
     U = block_hankel( u, 1, 2*i, N );
@@ -38,6 +38,7 @@ else
     error( 'Not a recognized projection method' );
 end
 
+%% Reconstruct A, C
 [r,s,~] = svd( Oi );
 if eps > 0
     n = find( diag( s )/s(1) < eps, 1 ) - 1; % approximate order of the system
@@ -51,7 +52,7 @@ G = r( :, 1:n ) * sqrt( s( 1:n, 1:n ) );
 C = G( 1:l, : );
 A = pinv( G( 1:(i-1)*l, : ) ) * G( (l+1):i*l, : );
 
-% Stabilize A
+%% Stabilize A
 [UA,TA] = schur( A, 'complex' );
 eigs = diag(TA);
 ns = nnz( abs( eigs ) > 1 );
@@ -64,7 +65,7 @@ while ns > 0
     ns = nnz( abs( eigs ) > 1 );
 end
 
-% Crazy least-squares problem to recover x0, B and D simultaneously
+%% Crazy least-squares problem to recover x0, B and D simultaneously
 F1 = zeros( l*N, n );
 F1( 1:l, : ) = C;
 for t = 1:N-1
