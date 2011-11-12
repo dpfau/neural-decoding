@@ -21,11 +21,5 @@ for j = 1:length( spikes )
 end
 
 if nargin == 3
-    c = zeros( length( edges ), length( cvr ) );
-    for j = 1:length( cvr )
-        [~,bin] = histc( cvr{j}(:,1), edges );
-        for i = 1:max(bin)
-            c(i,j) = mean( cvr{j}( bin==i, 2 ) );
-        end
-    end
+    c = fast_avg( edges, cvr );
 end
