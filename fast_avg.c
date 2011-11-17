@@ -14,8 +14,8 @@
 *
 * Output arguments:
 * plhs[0] - double array of averages, time along the first axis, average value for different cells of prhs[1]
-*	along the second axis.  In future versions, there will be multiple outputs, for average deriviatives of
-*	various orders
+*	along the second axis.
+* plhs[1] - double array of average derivatives
 **/
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 	if( nrhs != 2 ) {
@@ -32,14 +32,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 	x = mxGetNumberOfElements( prhs[0] ) - 1;
 	y = mxGetNumberOfElements( prhs[1] );
 	plhs[0] = mxCreateDoubleMatrix( x, y, mxREAL );
+	plhs[1] = mxCreateDoubleMatrix( x, y, mxREAL );
 
 	double *edges = mxGetPr( prhs[0] );
 	double *output = mxGetPr( plhs[0] );
+	double *deriv  = mxGetPr( plhs[1] );
 	mxArray *cvr = mxGetCell( prhs[1], (mwIndex) 1 );
 
 	mwIndex i, j;
 	mwSize q, n;
-	int nbin; // number of elements in the bin, by which we divide the running sum once we reach the end of the bin
+	int nbin, dbin; // number of elements in the bin, by which we divide the running sum once we reach the end of the bin.
+					// dbin is almost always the same, except for the first bin when presumably we have one fewer derivative to average.
 	for( j = 0; j < y; j++ ) {
 		mxArray *cvr = mxGetCell( prhs[1], j );
 		n = mxGetM( cvr );
@@ -54,19 +57,29 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 					mexErrMsgTxt("Covariate times begin after last edge!");
 				}
 				nbin = 0;
+				dbin = 0;
 			}
 			if ( i >= 0 && i < x ) {
 				if( timesAndVals[q] >= edges[i+1] ) {
 					output[i + x*j] /= nbin;
+					deriv[i + x*j] /= dbin;
 					i++;
 					nbin = 0;
+					dbin = 0;
 				}
 				output[i + x*j] += timesAndVals[q + n];
 				nbin++;
+				if( q > 0 ) {
+					deriv[i + x*j] += ( timesAndVals[q + n] - timesAndVals[q - 1 + n] )/( timesAndVals[q] - timesAndVals[q - 1] );
+					dbin++;
+				}
 			}
 		}
 		if( nbin != 0 ) {
 			output[i + x*j] /= nbin;
+		}
+		if( dbin != 0 ) {
+			deriv[i + x*j] /= dbin;
 		}
 	}
 }

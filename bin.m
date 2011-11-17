@@ -1,10 +1,11 @@
-function [s, c] = bin( spikes, dt, cvr )
+function [s, c, d] = bin( spikes, dt, cvr )
 % spikes - cell array of spike times for each unit
 % dt - bin width
 % cvr - optional cell array of covariates, first column is times, second 
 %       column values
 % s - binned spike times
 % c - binned covariates
+% d - binned derivatives of covariates
 
 c = [];
 T0 = min( cellfun( @min, spikes ) );
@@ -21,5 +22,5 @@ for j = 1:length( spikes )
 end
 
 if nargin == 3
-    c = fast_avg( edges, cvr );
+    [c,d] = fast_avg( edges, cvr );
 end

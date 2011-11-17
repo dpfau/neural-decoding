@@ -26,7 +26,7 @@ elseif strncmp( proj, 'orth', 4 )
     U = block_hankel( u, 1, i, N );
     
     if strcmp( proj, 'orth_pinv' )
-        Oi = Y * ( eye( N ) - pinv( U ) * U );
+        Oi = Y * ( eye( N - i + 1 ) - pinv( U ) * U );
     elseif strcmp( proj, 'orth_svd' )
         [~,~,v] = svd(U);
         Un = v(:,m*i+1:end);

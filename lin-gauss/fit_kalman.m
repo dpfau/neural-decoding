@@ -9,10 +9,10 @@ function [A C Q R] = fit_kalman(y, z)
 assert( size(y,2) == size(z,2), 'Input and output data must be same length' );
 n = size(y,2);
 
-A = z(2:end) * pinv( z(1:end-1) );
+A = z(:,2:end) * pinv( z(:,1:end-1) );
 C = y * pinv( z );
 
-Ares = z(2:end) - A*z(1:end-1);
+Ares = z(:,2:end) - A*z(:,1:end-1);
 Q = Ares*Ares'/n;
 
 Cres = y - C*z;
