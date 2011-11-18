@@ -6,6 +6,7 @@ for i = 1:2:length(varargin)
     eval([varargin{i} ' = varargin{' num2str(i+1) '};']);
 end
 
+% Note that random initializations are often very bad for EM
 if ~exist('A','var'), A = randn(n); end
 if ~exist('C','var'), C = randn(size(y,1),n); end
 if ~exist('Q','var')

@@ -1,6 +1,11 @@
-function [z V ll VV P] = kalman_filter(y, A, C, Q, R, z0, P0)
+function [z V ll VV P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B, D)
 % Forward pass of a Kalman smoother.  If used for smoothing, we also want
-% to output z_{t+1|t} and P_{t+1|t}, which we denote P here.
+% to output P_{t+1|t}, which we denote P here.
+% Also includes optional u, B and D for the input-output case
+
+if nargin == 8
+    error('Input-Output case missing parameters!');
+end
 
 z = zeros(size(P0,1),size(y,2));
 V = zeros(size(P0,1),size(P0,2),size(y,2));
@@ -17,15 +22,22 @@ Pt = P0;
 
 Rinv = R^-1; % store for fast matrix inversion
 for i = 1:size(y,2)
+    if nargin > 8
+        zt = zt + B*u(:,i);
+    end
+    
     % Precision matrix of y(:,i) given y(:,1:i-1).
-    % Same as (C*Pt*C' + R)^-1 by Woodbury lemma.
     if size(y,1) > 50
+        % Same as (C*Pt*C' + R)^-1 by Woodbury lemma.
         Sinv = Rinv + Rinv*C*(Pt^-1 + C'*Rinv*C)^-1*C'*Rinv';
     else
         Sinv = (C*Pt*C' + R)^-1;
     end
     xt = y(:,i) - C*zt; % residual
-    ll(i) = - 0.5*( xt'*Sinv*xt + size(y,1)*log( 2*pi ) - log( det( Sinv ) ) );
+    if nargin > 9
+        xt = xt - D*u(:,i);
+    end
+    ll(i) = - 0.5*( xt'*Sinv*xt + size(y,1)*log( 2*pi ) - log( det( Sinv ) ) ); % log likelihood of one observation
     
     % update
     Kt = Pt*C'*Sinv; % Kalman gain
