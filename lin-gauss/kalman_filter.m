@@ -1,10 +1,16 @@
-function [z V ll VV P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B, D)
+function [z V ll VV P] = kalman_filter(y, A, C, Q, R, z0, P0, varargin)
 % Forward pass of a Kalman smoother.  If used for smoothing, we also want
 % to output P_{t+1|t}, which we denote P here.
 % Also includes optional u, B and D for the input-output case
 
-if nargin == 8
-    error('Input-Output case missing parameters!');
+for i = 1:2:length(varargin)
+    eval([varargin{i} ' = varargin{' num2str(i+1) '};']);
+end
+if exist('u','var') && ~exist('B','var')
+    error('Input-output parameters missing!')
+end
+if exist('B','var') && ~exist('u','var')
+    error('Input data missing!');
 end
 
 z = zeros(size(P0,1),size(y,2));
@@ -22,7 +28,7 @@ Pt = P0;
 
 Rinv = R^-1; % store for fast matrix inversion
 for i = 1:size(y,2)
-    if nargin > 8
+    if exist('B','var');
         zt = zt + B*u(:,i);
     end
     
@@ -34,7 +40,7 @@ for i = 1:size(y,2)
         Sinv = (C*Pt*C' + R)^-1;
     end
     xt = y(:,i) - C*zt; % residual
-    if nargin > 9
+    if exist('D','var')
         xt = xt - D*u(:,i);
     end
     ll(i) = - 0.5*( xt'*Sinv*xt + size(y,1)*log( 2*pi ) - log( det( Sinv ) ) ); % log likelihood of one observation

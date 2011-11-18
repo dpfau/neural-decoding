@@ -1,18 +1,12 @@
-function [z V ll VV] = kalman_smoother(y, A, C, Q, R, z0, P0, u, B, D)
+function [z V ll VV] = kalman_smoother(y, A, C, Q, R, z0, P0, varargin)
 % Really the Rauch-Tung-Striebel smoother, but that's too jargony for me
 % The VV term, E[z_t,z_t-1|y], is needed for EM, but may be omitted
 
-if nargin == 7
-    [z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0); % forward pass
-elseif nargin == 8
-    error('Input-Output case missing parameters!');
-elseif nargin == 9
-    [z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B);
-elseif nargin == 10
-    [z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B, D);
-else
-    error('Incorrect number of inputs');
+for i = 1:2:length(varargin)
+    eval([varargin{i} ' = varargin{' num2str(i+1) '};']);
 end
+
+[z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, varargin); % forward pass
 
 z = zeros(size(z_));
 V = zeros(size(V_));
@@ -28,9 +22,9 @@ for i = size(y,2)-1:-1:1
     V(:,:,i+1) = Vt;
     
     Lt = V_(:,:,i)*A'*P(:,:,i)^-1;
-    zpred = A*z(:,i);
-    if nargin > 8
-        zpred = zpred - B*u(:,i);
+    zpred = A*z_(:,i);
+    if exist('B','var')
+        zpred = zpred + B*u(:,i);
     end
     zt = z_(:,i) + Lt*(zt - zpred);
     if nargout > 3
