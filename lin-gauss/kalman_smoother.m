@@ -8,8 +8,10 @@ elseif nargin == 8
     error('Input-Output case missing parameters!');
 elseif nargin == 9
     [z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B);
-else
+elseif nargin == 10
     [z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, u, B, D);
+else
+    error('Incorrect number of inputs');
 end
 
 z = zeros(size(z_));
