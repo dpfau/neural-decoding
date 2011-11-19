@@ -72,6 +72,6 @@ while abs(ll - ll0) > tol
     
     fprintf('Data log likelihood: %d\n',ll);
     ll0 = ll;
-    [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0);
+    [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,varargin);
     ll = sum(lls);
 end
