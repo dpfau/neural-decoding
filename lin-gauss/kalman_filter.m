@@ -6,10 +6,10 @@ function [z V ll VV P] = kalman_filter(y, A, C, Q, R, z0, P0, varargin)
 for i = 1:2:length(varargin)
     eval([varargin{i} ' = varargin{' num2str(i+1) '};']);
 end
-if exist('u','var') && ~exist('B','var')
+if exist('u','var') && ~exist('B','var') && ~exist('D','var')
     error('Input-output parameters missing!')
 end
-if exist('B','var') && ~exist('u','var')
+if (exist('B','var') || exist('D','var')) && ~exist('u','var')
     error('Input data missing!');
 end
 

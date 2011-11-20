@@ -6,7 +6,7 @@ for i = 1:2:length(varargin)
     eval([varargin{i} ' = varargin{' num2str(i+1) '};']);
 end
 
-[z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, varargin); % forward pass
+[z_ V_ ll VV_ P] = kalman_filter(y, A, C, Q, R, z0, P0, varargin{:}); % forward pass
 
 z = zeros(size(z_));
 V = zeros(size(V_));
@@ -24,7 +24,7 @@ for i = size(y,2)-1:-1:1
     Lt = V_(:,:,i)*A'*P(:,:,i)^-1;
     zpred = A*z_(:,i);
     if exist('B','var')
-        zpred = zpred + B*u(:,i);
+        zpred = zpred + B*u(:,i+1);
     end
     zt = z_(:,i) + Lt*(zt - zpred);
     if nargout > 3
