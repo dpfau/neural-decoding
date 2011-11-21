@@ -54,7 +54,6 @@ ll0 = -Inf;
 ll = sum(lls);
 while abs(ll - ll0) > tol
     fprintf('Data log likelihood: %d\n',ll);
-    svd(Q)
     z0 = z(:,1);
     V0 = V(:,:,1) - z(:,1)*z(:,1)';
 
@@ -68,14 +67,12 @@ while abs(ll - ll0) > tol
         z0 = z0 - B*u(:,1);
         V0 = V0 + 2*z(:,1)*u(:,1)'*B';
         
-        u1 = u(:,1:end-1);
-        z1 = z(:,1:end-1);
-        z2 = z(:,2:end);
-        % A = (Ptt1 - B*u1*z1')/Pt1t1;
-        % B = u(:,1:end-1)*u(:,1:end-1)'*(z(:,2:end)*u(:,1:end-1)')^-1
-        % B = (zu - Ptt1*Pinv*uz')*(u(:,1:end-1)*u(:,1:end-1)' - uz*Pinv*uz')^-1;
-        Q = 1/(T-1)*(Ptt - A*Ptt1' - B*u1*z1');
-        % Q = 1/(T-1)*(Ptt - A*Ptt1'- Ptt1*A' + A*Pt1t1*A' - B*u1*z2' - z2*u1'*B' + B*(u1*u1')*B' + A*(z1*u1')*B' + B*(u1*z1')*A');
+        u2 = u(:,2:end); z1 = z(:,1:end-1); z2 = z(:,2:end);
+        AB = [Ptt1, z1*u2']*[Pt1t1, z1*u2'; u2*z1', u2*u2']^-1;
+        A = AB(:,1:n);
+        B = AB(:,n+1:end);
+        Q = 1/(T-1)*(Ptt - A*Ptt1' - B*u2*z2');
+        Q = diag(diag(Q)); % as the model is nonidentifiable, might as well force Q to be diagonal (following Zoubin)
     end
     
     if ~exist('D','var')
