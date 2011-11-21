@@ -53,22 +53,29 @@ ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
 ll = sum(lls);
 while abs(ll - ll0) > tol
+    fprintf('Data log likelihood: %d\n',ll);
+    svd(Q)
     z0 = z(:,1);
-    V0 = V(:,:,1);
+    V0 = V(:,:,1) - z(:,1)*z(:,1)';
 
     Ptt1  = sum(VV(:,:,2:end),3) + z(:,2:end)*z(:,1:end-1)';
     Pt1t1 = sum(V(:,:,1:end-1),3) + z(:,1:end-1)*z(:,1:end-1)';
     Ptt   = sum(V(:,:,2:end),3) + z(:,2:end)*z(:,2:end)';
     if ~exist('B','var')
-        A = Ptt1*Pt1t1^-1;
+        A = Ptt1/Pt1t1;
         Q = 1/(T-1)*(Ptt - A*Ptt1');
     else
-        Pinv = Pt1t1^-1;
-        uz = u(:,1:end-1)*z(:,1:end-1)';
-        zu = z(:,2:end)*u(:,1:end-1)';
-        %B = (zu - Ptt1*Pinv*uz')*(u(:,1:end-1)*u(:,1:end-1)' - uz*Pinv*uz')^-1;
-        A = (Ptt1 - B*uz)*Pinv;
-        Q = 1/(T-1)*(Ptt - A*Ptt1' - B*zu');
+        z0 = z0 - B*u(:,1);
+        V0 = V0 + 2*z(:,1)*u(:,1)'*B';
+        
+        u1 = u(:,1:end-1);
+        z1 = z(:,1:end-1);
+        z2 = z(:,2:end);
+        % A = (Ptt1 - B*u1*z1')/Pt1t1;
+        % B = u(:,1:end-1)*u(:,1:end-1)'*(z(:,2:end)*u(:,1:end-1)')^-1
+        % B = (zu - Ptt1*Pinv*uz')*(u(:,1:end-1)*u(:,1:end-1)' - uz*Pinv*uz')^-1;
+        Q = 1/(T-1)*(Ptt - A*Ptt1' - B*u1*z1');
+        % Q = 1/(T-1)*(Ptt - A*Ptt1'- Ptt1*A' + A*Pt1t1*A' - B*u1*z2' - z2*u1'*B' + B*(u1*u1')*B' + A*(z1*u1')*B' + B*(u1*z1')*A');
     end
     
     if ~exist('D','var')
@@ -79,9 +86,7 @@ while abs(ll - ll0) > tol
         D = (y*u' - y*z'*Pinv*z*u')*(u*u' - u*z'*Pinv*z*u')^-1;
         C = (y*z' - D*u*z')*Pinv;
         R = 1/T*(y*y' - C*z*y' - D*u*y');
-    end
-    
-    fprintf('Data log likelihood: %d\n',ll);
+    end    
     ll0 = ll;
     [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
     ll = sum(lls);
