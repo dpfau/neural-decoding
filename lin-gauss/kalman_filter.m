@@ -19,7 +19,7 @@ if nargout > 3
     VV = zeros(size(V));
 end
 if nargout > 4
-    P = zeros(size(P0));
+    P = zeros(size(V));
 end
 
 ll = zeros(size(y,2),1); % log likelihood
@@ -28,14 +28,11 @@ Pt = P0;
 
 Rinv = R^-1; % store for fast matrix inversion
 for i = 1:size(y,2)
-    if exist('B','var');
-        zt = zt + B*u(:,i);
-    end
-    
     % Precision matrix of y(:,i) given y(:,1:i-1).
     if size(y,1) > 50
         % Same as (C*Pt*C' + R)^-1 by Woodbury lemma.
-        Sinv = Rinv + Rinv*C*(Pt^-1 + C'*Rinv*C)^-1*C'*Rinv';
+        T = Rinv*C;
+        Sinv = Rinv - T*(Pt^-1 + C'*T)^-1*T';
     else
         Sinv = (C*Pt*C' + R)^-1;
     end
@@ -62,6 +59,9 @@ for i = 1:size(y,2)
     
     % predict
     zt = A*zt;
+    if exist('B','var')
+        zt = zt + B*u(:,i);
+    end
     Pt = A*Vt*A' + Q;
     if nargout > 4
         P(:,:,i) = Pt;

@@ -55,7 +55,8 @@ ll = sum(lls);
 while abs(ll - ll0) > tol
     fprintf('Data log likelihood: %d\n',ll);
     z0 = z(:,1);
-    V0 = V(:,:,1) - z(:,1)*z(:,1)';
+    z1 = z(:,1)-mean(z(:,1));
+    V0 = V(:,:,1) + z1*z1';
 
     Ptt1  = sum(VV(:,:,2:end),3) + z(:,2:end)*z(:,1:end-1)';
     Pt1t1 = sum(V(:,:,1:end-1),3) + z(:,1:end-1)*z(:,1:end-1)';
@@ -64,11 +65,8 @@ while abs(ll - ll0) > tol
         A = Ptt1/Pt1t1;
         Q = 1/(T-1)*(Ptt - A*Ptt1');
     else
-        z0 = z0 - B*u(:,1);
-        V0 = V0 + 2*z(:,1)*u(:,1)'*B';
-        
-        u2 = u(:,2:end); z1 = z(:,1:end-1); z2 = z(:,2:end);
-        AB = [Ptt1, z1*u2']*[Pt1t1, z1*u2'; u2*z1', u2*u2']^-1;
+        u2 = u(:,1:end-1); z1 = z(:,1:end-1); z2 = z(:,2:end);
+        AB = [Ptt1, z2*u2']*[Pt1t1, z1*u2'; u2*z1', u2*u2']^-1;
         A = AB(:,1:n);
         B = AB(:,n+1:end);
         Q = 1/(T-1)*(Ptt - A*Ptt1' - B*u2*z2');

@@ -24,7 +24,7 @@ for i = size(y,2)-1:-1:1
     Lt = V_(:,:,i)*A'*P(:,:,i)^-1;
     zpred = A*z_(:,i);
     if exist('B','var')
-        zpred = zpred + B*u(:,i+1);
+        zpred = zpred + B*u(:,i);
     end
     zt = z_(:,i) + Lt*(zt - zpred);
     if nargout > 3
