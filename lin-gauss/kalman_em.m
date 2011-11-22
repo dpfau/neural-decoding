@@ -49,6 +49,7 @@ elseif nargout > 6
 end
 
 %% EM loop
+y = y - mean(y,2)*ones(1,T);
 ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
 ll = sum(lls);
@@ -81,6 +82,7 @@ while abs(ll - ll0) > tol
         D = (y*u' - y*z'*Pinv*z*u')*(u*u' - u*z'*Pinv*z*u')^-1;
         C = (y*z' - D*u*z')*Pinv;
         R = 1/T*(y*y' - C*z*y' - D*u*y');
+        R = diag(diag(R));
     end    
     ll0 = ll;
     [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
