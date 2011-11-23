@@ -26,7 +26,7 @@ Pt = P0;
 for i = 1:T
     R = f(C*zt + b);
     Rinv = diag(1./R);
-    H = grad(C*xt + b)*ones(1,k) .* C;
+    H = grad(C*zt + b)*ones(1,k) .* C;
     % Precision matrix of y(:,i) given y(:,1:i-1).
     if size(y,1) > 50
         % Same as (H*Pt*H' + R)^-1 by Woodbury lemma.
