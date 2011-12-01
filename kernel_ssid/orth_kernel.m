@@ -11,9 +11,10 @@ for i = 1:size(U,2)
 end
 invKuu = Kuu^-1;
 ku = @(x,y) k(x,y) - kux(x,U,k)'*invKuu*kux(y,U,k);
+kuf = @kux;
 
 function z = kux(x,U,k)
-z = zeros(size(U,2));
+z = zeros(size(U,2),1);
 for i = 1:size(U,2)
     z(i) = k(x,U(:,i));
 end

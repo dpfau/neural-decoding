@@ -59,32 +59,3 @@ x0 = xx(1:n);
 D = reshape( xx( n + (1:l*m) ), l, m );
 B = reshape( xx(n + l*m + 1:end ), n, m );
 s = diag(s);
-
-function y = hankel_op( Un, m, i, N, x, mode )
-% Given x, calculates X*Un, where X is a block-Hankel matrix derived from
-% x, and Un is a matrix whose columns span the null space of the
-% block-Hankel matrix of u.  Standard form of linear operators in TFOCS.
-
-switch mode
-    case 0 % return { input size, output size }
-        y = { [ m, N ], [ m * i, size( Un, 2 ) ] };
-    case 1 % apply operator to input
-        y = block_hankel( x, 1, i, N ) * Un;
-    case 2 % apply adjoint operator to input
-        y = adjoint_hankel( x * Un', i, N );
-end
-
-function [hx, x] = proj_spectral( x, t )
-% find the projection of the matrix x onto the spectral norm ball, that is,
-% set all singular values greater than 1 to 1.  t is included to meet the
-% form of a generalized projection function for TFOCS.
-
-hx = 0;
-if nargin == 2
-    [u,s,v] = svd( x );
-    x = u * min( s, 1 ) * v';
-elseif nargout == 2
-    error( 'This function is not differentiable.' );
-end
-s = svd( x );
-if s( 1 ) > 1, hx = Inf; end
