@@ -1,4 +1,4 @@
-function [A B C D x0 b s s0] = moesp_nn_poiss_out( y, u, i, N, vsig, f, rho, eps )
+function [A B C D x0 b s s0] = moesp_nn_poiss_out( y, u, i, N, vsig, rho, eps )
 % Learns a Wiener model with known output nonlinearity and Poisson noise by
 % nuclear norm minimization + subspace identification, where nuclear norm
 % minimization is done by alternating direction method of multipliers.  The
@@ -39,9 +39,9 @@ yh1 = y(:,1:N);
 b = log(mean(y,2) + 1e-6); % really, this is only a good initial guess if f = exp, but if it isn't it will just slow convergence a bit
 z = zeros(l*(N+1),1); % auxilliary variable for ADMM
 res = Inf; % residual
-while norm( res ) > 1e-4 % ADMM loop
+while res > 1e-4 % ADMM loop
     lambda = 2*s0(1)/l/N/vsig^2;
-    yh = tfocs_SCD( smooth_linear( reshape( z(1:l*N), l, N ) ), ...
+    yh = tfocs_SCD( smooth_linear( zyh ), ...
         @(varargin) hankel_op( Un, l, i, N, varargin{:} ), ...
         @proj_spectral, ...
         rho, ...
@@ -50,10 +50,19 @@ while norm( res ) > 1e-4 % ADMM loop
         opts );
     b = b1;
     
+    %Newton's method
+    yh0 = yh; yh1 = yh;
+    b0  = b;  b1  = b;
+    f = @(yh_,b_) lambda*sum( sum( exp( yh_ + b_*ones(1,N) ) - y(:,1:N).*( yh_ + b_*ones(1,N) ) ) ) ...
+        + zyh(:)'*yh_(:) ) ) + zb'*b_ + 0.5*rho*( yh_(:)'*yh(:) + b'*b );
+    newtres = Inf; % residue for newton step
+    while newtres > 1e-12
+        
+    end
     
-    
-    res = [yh(:) - yh1(:); b - b1];
-    z = z + rho*res;
+    zyh = zyh + rho*(yh - yh1);
+    zb  = zb  + rho*(b - b1);
+    res = norm( yh - yh1 ) + norm( b - b1 );
 end
 [r,s,~] = svd( hankel_op( Un, l, i, N, yh, 1 ) );
 
