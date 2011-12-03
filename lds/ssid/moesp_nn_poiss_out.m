@@ -54,7 +54,7 @@ while res > 1e-4 % ADMM loop
     yh0 = yh; yh1 = yh;
     b0  = b;  b1  = b;
     f = @(yh_,b_) lambda*sum( sum( exp( yh_ + b_*ones(1,N) ) - y(:,1:N).*( yh_ + b_*ones(1,N) ) ) ) ...
-        + zyh(:)'*yh_(:) ) ) + zb'*b_ + 0.5*rho*( yh_(:)'*yh(:) + b'*b );
+        + zyh(:)'*yh_(:) + zb'*b_ + 0.5*rho*( yh_(:)'*yh(:) + b'*b );
     newtres = Inf; % residue for newton step
     while newtres > 1e-12
         
