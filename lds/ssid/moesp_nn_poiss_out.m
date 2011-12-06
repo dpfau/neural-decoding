@@ -36,10 +36,11 @@ opts.tol = 1e-4; % don't have all day here, folks...
 opts.printEvery = 10;
 
 yh1 = y(:,1:N);
-b = log(mean(y,2) + 1e-6); % really, this is only a good initial guess if f = exp, but if it isn't it will just slow convergence a bit
-z = zeros(l*(N+1),1); % auxilliary variable for ADMM
+b = log(mean(y,2) + 1e-6);
+zyh = zeros(l*(N+1),1); % auxilliary variable for ADMM
 res = Inf; % residual
 while res > 1e-4 % ADMM loop
+    % Nuclear norm minimization
     lambda = 2*s0(1)/l/N/vsig^2;
     yh = tfocs_SCD( smooth_linear( zyh ), ...
         @(varargin) hankel_op( Un, l, i, N, varargin{:} ), ...
@@ -51,15 +52,43 @@ while res > 1e-4 % ADMM loop
     b = b1;
     
     %Newton's method
-    yh0 = yh; yh1 = yh;
-    b0  = b;  b1  = b;
-    f = @(yh_,b_) lambda*sum( sum( exp( yh_ + b_*ones(1,N) ) - y(:,1:N).*( yh_ + b_*ones(1,N) ) ) ) ...
+    yh1 = yh;
+    b1  = b;
+    eyb = @(yh_,b_) exp( yh_ + b_*ones(1,N) ); % arcane, I know, but this saves a lot of space later
+    f = @(yh_,b_) lambda*sum( sum( eyb(yh_,b_) - y(:,1:N).*( yh_ + b_*ones(1,N) ) ) ) ...
         + zyh(:)'*yh_(:) + zb'*b_ + 0.5*rho*( yh_(:)'*yh(:) + b'*b );
     newtres = Inf; % residue for newton step
     while newtres > 1e-12
+        eyb1 = eyb(yh1,b1); % saves even more space
+        gy = lambda*( eyb1 - y(:,1:N) ) + zyh + rho( yh1 - yh ); % gradient of f wrt yh at (yh,b)
+        gb = lambda*( sum( eyb1 - y(:,1:N), 2 ) ) + zb + rho( b1 - b ); % gradient of f wrt b at (yh,b)
         
+        % The Hessian is sparse, with many blocks that are diagonal
+        % matrices.  We keep track of these diagonals to do fast division
+        % by the Hessian.  Let H = [A B; B' C], A is l*N by l*N, C is l*l,
+        % both are diagonal, and B is l*N by l and each l*l block is
+        % diagonal.  We can then express the inverse Hessian as
+        % [ inv(A) + inv(A)*B*inv(C-B'*inv(A)*B)*B'*inv(A),
+        %   -inv(A)*B*inv(C-B'*inv(A)*B); -inv(C-B'inv(A)*B)*B'*inv(A),
+        %   inv(C-B'*inv(A)*B) ] by the block-matrix inversion lemma and 
+        % the Woodbury matrix inversion lemma.  Pardon the arcana below.
+        diagA = lambda*eyb1+rho;
+        BtinvAgy = ( lambda*gy./diagA )*eyb1';
+        CBtinvAB = lambda*sum( eyb1 - eyb1.^2./( eyb1 + rho ) ) + rho; % diagonal of C-B'*inv(A)*B
+        dyh = 1./diagA + lambda*diag( ( BtinvAgy - gb )./CBtinvAB )*eyb1./diagA;
+        db  = ( gb - BtinvAgy )./CBtinvAB;
+        
+        yh0 = yh1;       b0  = b1;
+        yh1 = yh1 - dyh; b1  = b1  - db;
+        
+        while f(yh1,b1) > f(yh0,b0)
+            yh1 = (yh1 + yh0)/2;
+            b1  = (b1  + b0)/2;
+        end
+        newtres = norm( yh1 - yh0 ) + norm( b1 - b0 );
     end
     
+    % Dual variable update
     zyh = zyh + rho*(yh - yh1);
     zb  = zb  + rho*(b - b1);
     res = norm( yh - yh1 ) + norm( b - b1 );
