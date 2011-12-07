@@ -51,42 +51,15 @@ while res > 1e-4 % ADMM loop
         opts );
     b = b1;
     
-    %Newton's method
-    yh1 = yh;
-    b1  = b;
-    eyb = @(yh_,b_) exp( yh_ + b_*ones(1,N) ); % arcane, I know, but this saves a lot of space later
-    f = @(yh_,b_) lambda*sum( sum( eyb(yh_,b_) - y(:,1:N).*( yh_ + b_*ones(1,N) ) ) ) ...
-        + zyh(:)'*yh_(:) + zb'*b_ + 0.5*rho*( yh_(:)'*yh(:) + b'*b );
-    newtres = Inf; % residue for newton step
-    while newtres > 1e-12
-        eyb1 = eyb(yh1,b1); % saves even more space
-        gy = lambda*( eyb1 - y(:,1:N) ) + zyh + rho( yh1 - yh ); % gradient of f wrt yh at (yh,b)
-        gb = lambda*( sum( eyb1 - y(:,1:N), 2 ) ) + zb + rho( b1 - b ); % gradient of f wrt b at (yh,b)
-        
-        % The Hessian is sparse, with many blocks that are diagonal
-        % matrices.  We keep track of these diagonals to do fast division
-        % by the Hessian.  Let H = [A B; B' C], A is l*N by l*N, C is l*l,
-        % both are diagonal, and B is l*N by l and each l*l block is
-        % diagonal.  We can then express the inverse Hessian as
-        % [ inv(A) + inv(A)*B*inv(C-B'*inv(A)*B)*B'*inv(A),
-        %   -inv(A)*B*inv(C-B'*inv(A)*B); -inv(C-B'inv(A)*B)*B'*inv(A),
-        %   inv(C-B'*inv(A)*B) ] by the block-matrix inversion lemma and 
-        % the Woodbury matrix inversion lemma.  Pardon the arcana below.
-        diagA = lambda*eyb1+rho;
-        BtinvAgy = ( lambda*gy./diagA )*eyb1';
-        CBtinvAB = lambda*sum( eyb1 - eyb1.^2./( eyb1 + rho ) ) + rho; % diagonal of C-B'*inv(A)*B
-        dyh = 1./diagA + lambda*diag( ( BtinvAgy - gb )./CBtinvAB )*eyb1./diagA;
-        db  = ( gb - BtinvAgy )./CBtinvAB;
-        
-        yh0 = yh1;       b0  = b1;
-        yh1 = yh1 - dyh; b1  = b1  - db;
-        
-        while f(yh1,b1) > f(yh0,b0)
-            yh1 = (yh1 + yh0)/2;
-            b1  = (b1  + b0)/2;
-        end
-        newtres = norm( yh1 - yh0 ) + norm( b1 - b0 );
-    end
+    % Minimize augmented negative log likelihood
+    opts1 = struct( 'GradObj', 'on', ...
+               'LargeScale', 'on', ...
+               'Hessian', 'on', ...
+               'HessMult', @hessmult, ...
+               'Display', 'iter' );
+    x1 = fminunc( @(x) f(x,[yh,b],lambda,rho,y(:,1:N),[zyh,zb]), [yh,b], opts1 );
+    yh1 = x1(:,1:end-1);
+    b1  = x1(:,end);
     
     % Dual variable update
     zyh = zyh + rho*(yh - yh1);
@@ -128,3 +101,30 @@ x0 = xx(1:n);
 D = reshape( xx( n + (1:l*m) ), l, m );
 B = reshape( xx(n + l*m + 1:end ), n, m );
 s = diag(s);
+
+function [y grad Hinfo] = f(x,x1,lam,rho,dat,z)
+% Objective function/gradient/fields necessary for multiplication by the
+% Hessian for minimizing the log likelihood term in ADMM
+
+N = size(x,2) - 1;
+yh = x(:,1:N);
+b = x(:,end);
+eyb = exp( yh + b*ones(1,N) );
+
+y = lam*sum( sum( eyb - dat.*( yh + b*ones(1,N) ) ) ) ...
+    + z(:)'*x(:) + 0.5*rho*( (x(:) - x1(:))'*(x(:) - x1(:)) );
+grad = lam*( [eyb - dat, sum( eyb - dat, 2 )] ) + z + rho*( x - x1 );
+Hinfo = struct('lam',lam,'rho',rho,'eyb',eyb);
+
+function hv = hessmult(Hinfo,v)
+% Multiplication by the Hessian of the objective for the log likelihood
+% step in ADMM
+
+N = size(Hinfo.eyb,2);
+hv = zeros(size(v));
+for i = 1:size(v,2)
+    v2 = reshape(v(:,i),size(Hinfo.eyb,1),N+1);
+    hv2 = [ (Hinfo.lam*Hinfo.eyb + Hinfo.rho).*v2(:,1:N) + Hinfo.lam*Hinfo.eyb.*(v2(:,end)*ones(1,N)), ...
+            Hinfo.lam*sum(Hinfo.eyb.*v2(:,1:N),2) + (Hinfo.lam*sum(Hinfo.eyb,2) + Hinfo.rho).*v2(:,end) ];
+    hv(:,i) = hv2(:);
+end
