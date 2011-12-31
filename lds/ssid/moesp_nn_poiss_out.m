@@ -33,15 +33,25 @@ s0 = svd( block_hankel( y, 1, i, N ) * Un );
 %% Nuclear norm minimization using TFOCS and ADMM, then take svd of YU^\perp
 opts = tfocs_SCD;
 opts.tol = 1e-4; % don't have all day here, folks...
+opts.maxIts = 1e3;
 opts.printEvery = 10;
 
 yh1 = y(:,1:N);
-b = log(mean(y,2) + 1e-6);
-zyh = zeros(l*(N+1),1); % auxilliary variable for ADMM
+b1 = log(mean(y,2) + 1e-6);
+zyh = zeros(size(yh1)); % auxilliary variable for ADMM
+zb  = zeros(size(b1));
 res = Inf; % residual
+lambda = 2*s0(1)/l/N/vsig^2; % tradeoff between nuclear norm and output log likelihood
+
+% Calculate and print augmented lagrangian objective for ADMM
+print_obj = @(x,x1,y,y1,z,z1) fprintf( 'Augmented Objective = %d\n\n', ...
+    admm_obj( x, x1, y, y1, z, z1, ...
+    @(q,q1) sum( svd( hankel_op( Un, l, i, N, q, 1 ) ) ), ...
+    @(q,q1) sum( sum( exp( q + q1*ones(1,N) ) - y(:,1:N).*( q + q1*ones(1,N) ) ) ), ...
+    lambda, rho ) );
+
 while res > 1e-4 % ADMM loop
     % Nuclear norm minimization
-    lambda = 2*s0(1)/l/N/vsig^2;
     yh = tfocs_SCD( smooth_linear( zyh ), ...
         @(varargin) hankel_op( Un, l, i, N, varargin{:} ), ...
         @proj_spectral, ...
@@ -50,6 +60,7 @@ while res > 1e-4 % ADMM loop
         hankel_op( Un, l, i, N, yh1, 1 ), ...
         opts );
     b = b1;
+    print_obj( yh, b, yh1, b1, zyh, zb );
     
     % Minimize augmented negative log likelihood
     opts1 = struct( 'GradObj', 'on', ...
@@ -60,11 +71,16 @@ while res > 1e-4 % ADMM loop
     x1 = fminunc( @(x) f(x,[yh,b],lambda,rho,y(:,1:N),[zyh,zb]), [yh,b], opts1 );
     yh1 = x1(:,1:end-1);
     b1  = x1(:,end);
+    print_obj( yh, b, yh1, b1, zyh, zb );
     
     % Dual variable update
+    % Note - the objective is increasing after this step, so it is almost
+    % surely wrong!!
     zyh = zyh + rho*(yh - yh1);
     zb  = zb  + rho*(b - b1);
     res = norm( yh - yh1 ) + norm( b - b1 );
+    print_obj( yh, b, yh1, b1, zyh, zb );
+    fprintf('Primal-Dual Residue: %d\n\n',res);
 end
 [r,s,~] = svd( hankel_op( Un, l, i, N, yh, 1 ) );
 
@@ -128,3 +144,9 @@ for i = 1:size(v,2)
             Hinfo.lam*sum(Hinfo.eyb.*v2(:,1:N),2) + (Hinfo.lam*sum(Hinfo.eyb,2) + Hinfo.rho).*v2(:,end) ];
     hv(:,i) = hv2(:);
 end
+
+function obj = admm_obj(x,x1,y,y1,z,z1,f,g,lam,rho)
+% The augmented Lagrangian objective which is iteratively minimized in ADMM
+
+res = [x(:) - y(:); x1(:) - y1(:)];
+obj = f(x,x1) + lam*g(y,y1) + [z(:); z1(:)]'*res + rho/2*(res'*res);
