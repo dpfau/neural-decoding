@@ -34,53 +34,48 @@ s0 = svd( block_hankel( y, 1, i, N ) * Un );
 opts = tfocs_SCD;
 opts.tol = 1e-4; % don't have all day here, folks...
 opts.maxIts = 1e3;
-opts.printEvery = 10;
+opts.printEvery = 0;
 
 yh1 = y(:,1:N);
 b1 = log(mean(y,2) + 1e-6);
 zyh = zeros(size(yh1)); % auxilliary variable for ADMM
 zb  = zeros(size(b1));
-res = Inf; % residual
+r_norm = Inf; % residual
 lambda = 2*s0(1)/l/N/vsig^2; % tradeoff between nuclear norm and output log likelihood
 
-% Calculate and print augmented lagrangian objective for ADMM
-print_obj = @(x,x1,y,y1,z,z1) fprintf( 'Augmented Objective = %d\n\n', ...
-    admm_obj( x, x1, y, y1, z, z1, ...
-    @(q,q1) sum( svd( hankel_op( Un, l, i, N, q, 1 ) ) ), ...
-    @(q,q1) sum( sum( exp( q + q1*ones(1,N) ) - y(:,1:N).*( q + q1*ones(1,N) ) ) ), ...
-    lambda, rho ) );
-
-while res > 1e-4 % ADMM loop
+fprintf('%3s\t%10s\t%10s\t%10s\n', 'iter', ...
+    'r norm', 's norm', 'objective');
+iter = 0;
+while r_norm > 1e-4 % ADMM loop
+    iter = iter + 1;
     % Nuclear norm minimization
-    yh = tfocs_SCD( smooth_linear( zyh ), ...
+    yh = tfocs_SCD( [], ...
         @(varargin) hankel_op( Un, l, i, N, varargin{:} ), ...
         @proj_spectral, ...
         rho, ...
-        yh1, ...
+        yh1 - zyh, ...
         hankel_op( Un, l, i, N, yh1, 1 ), ...
         opts );
     b = b1;
-    print_obj( yh, b, yh1, b1, zyh, zb );
     
     % Minimize augmented negative log likelihood
     opts1 = struct( 'GradObj', 'on', ...
-               'LargeScale', 'on', ...
-               'Hessian', 'on', ...
-               'HessMult', @hessmult, ...
-               'Display', 'iter' );
+        'LargeScale', 'on', ...
+        'Hessian', 'on', ...
+        'HessMult', @hessmult, ...
+        'Display', 'off' );
+    xold = [yh1, b1];
     x1 = fminunc( @(x) f(x,[yh,b],lambda,rho,y(:,1:N),[zyh,zb]), [yh,b], opts1 );
     yh1 = x1(:,1:end-1);
     b1  = x1(:,end);
-    print_obj( yh, b, yh1, b1, zyh, zb );
     
     % Dual variable update
-    % Note - the objective is increasing after this step, so it is almost
-    % surely wrong!!
-    zyh = zyh + rho*(yh - yh1);
-    zb  = zb  + rho*(b - b1);
-    res = norm( yh - yh1 ) + norm( b - b1 );
-    print_obj( yh, b, yh1, b1, zyh, zb );
-    fprintf('Primal-Dual Residue: %d\n\n',res);
+    zyh = zyh + yh - yh1;
+    zb  = zb  + b - b1;
+    r_norm = norm( yh - yh1, 'fro' ) + norm( b - b1, 'fro' );
+    s_norm = norm( -rho*( [yh1, b1] - xold ), 'fro' );
+    obj = objective( yh, yh1, b1, y(:,1:N), lambda, i, Un );
+    fprintf('%3d\t%10.4f\t%10.4f\t%10.2f\n', iter, r_norm, s_norm, obj );
 end
 [r,s,~] = svd( hankel_op( Un, l, i, N, yh, 1 ) );
 
@@ -128,8 +123,8 @@ b = x(:,end);
 eyb = exp( yh + b*ones(1,N) );
 
 y = lam*sum( sum( eyb - dat.*( yh + b*ones(1,N) ) ) ) ...
-    + z(:)'*x(:) + 0.5*rho*( (x(:) - x1(:))'*(x(:) - x1(:)) );
-grad = lam*( [eyb - dat, sum( eyb - dat, 2 )] ) + z + rho*( x - x1 );
+    + 0.5*rho*( (x1(:) - x(:) + z(:))'*(x1(:) - x(:) + z(:)) );
+grad = lam*( [eyb - dat, sum( eyb - dat, 2 )] ) + rho*( x - x1 - z );
 Hinfo = struct('lam',lam,'rho',rho,'eyb',eyb);
 
 function hv = hessmult(Hinfo,v)
@@ -145,8 +140,9 @@ for i = 1:size(v,2)
     hv(:,i) = hv2(:);
 end
 
-function obj = admm_obj(x,x1,y,y1,z,z1,f,g,lam,rho)
-% The augmented Lagrangian objective which is iteratively minimized in ADMM
+function obj = objective(yh,yh1,b1,y,lam,i,Un)
 
-res = [x(:) - y(:); x1(:) - y1(:)];
-obj = f(x,x1) + lam*g(y,y1) + [z(:); z1(:)]'*res + rho/2*(res'*res);
+l = size(yh,1);
+N = size(yh,2);
+obj = sum( svd( hankel_op( Un, l, i, N, yh, 1 ) ) ) ...
+    + lam*sum( sum( exp( yh1 + b1*ones(1,N) ) - y.*( yh1 + b1*ones(1,N) ) ) );
