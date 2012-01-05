@@ -8,8 +8,8 @@ function [s, c, d] = bin( spikes, dt, cvr )
 % d - binned derivatives of covariates
 
 c = [];
-T0 = min( cellfun( @min, spikes ) );
-T1 = max( cellfun( @max, spikes ) );
+T0 = min( cellfun( @(x) min(x(:,1)), spikes ) );
+T1 = max( cellfun( @(x) max(x(:,1)), spikes ) );
 if nargin == 3
     T0 = min( [ T0, cellfun( @(x) min( x(:,1) ), cvr ) ] );
     T1 = max( [ T1, cellfun( @(x) max( x(:,1) ), cvr ) ] );
