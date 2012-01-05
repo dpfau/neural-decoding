@@ -15,10 +15,10 @@ if nargin == 3
     T1 = max( [ T1, cellfun( @(x) max( x(:,1) ), cvr ) ] );
 end
 edges = T0:dt:T1+dt;
-s = zeros( length( edges ), length( spikes ) );
+s = zeros( length( edges ), size( spikes, 1 ) );
 
 for j = 1:length( spikes )
-    s(:,j) = histc( spikes{j}, edges );
+    s(:,j) = histc( spikes{j}(:,1), edges );
 end
 
 if nargin == 3
