@@ -2,6 +2,9 @@ function [A B C D x0 s] = moesp( y, u, i, N, opts )
 % Subspace identification for the linear time invariant system:
 % x(t+1) = A*x(t) + B*u(t)
 % y(t) = C*x(t) + D*u(t)
+% For data with output noise, one approach following Zhang and Vandenberghe
+% 2010 is to use nuclear norm minimization.  To use this approach with this
+% code, TFOCS is required: http://tfocs.stanford.edu/
 %
 % Mandatory inputs:
 % y - output data, one column per time step
@@ -27,6 +30,7 @@ function [A B C D x0 s] = moesp( y, u, i, N, opts )
 %   opts.noise ~= 'none'
 % rho - the constant factor for the augmented lagrangian in ADMM, if
 %   opts.noise == 'poiss'
+% tfocs_path - path to TFOCS
 %
 % David Pfau, 2011-2012
 
@@ -43,6 +47,9 @@ if ~strcmpi( opts.noise, 'none' )
     if strcmpi( opts.noise, 'poiss' )
         if ~isfield( opts, 'rho' )  opts.rho = 1;           end
     end
+end
+if ~isfield( opts, 'tfocs_path' )
+    opts.tfocs_path = '/Users/davidpfau/Documents/MATLAB/TFOCS'; 
 end
 
 %% Project the columns of Y or Yf onto the appropriate subspace
@@ -73,7 +80,7 @@ elseif strncmpi( opts.proj, 'orth', 4 )
         case 'gauss'
             % For Gaussian noise, can do nuclear norm plus Gaussian 
             % likelihood minimization directly
-            addpath /Users/davidpfau/Documents/MATLAB/TFOCS
+            addpath( opts.tfocs_path )
             tfocs_opts = tfocs_SCD;
             tfocs_opts.tol = 1e-4; % don't have all day here, folks...
             tfocs_opts.printEvery = 10;
@@ -88,7 +95,7 @@ elseif strncmpi( opts.proj, 'orth', 4 )
         case 'poiss'
             % For Poisson noise, use ADMM to optimize jointly over nuclear
             % norm and Poisson likelihood
-            addpath /Users/davidpfau/Documents/MATLAB/TFOCS
+            addpath( opts.tfocs_path )
             tfocs_opts = tfocs_SCD;
             tfocs_opts.tol = 1e-4;
             tfocs_opts.maxIts = 1e3;
