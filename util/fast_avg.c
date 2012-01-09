@@ -62,7 +62,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 			if ( i >= 0 && i < x ) {
 				if( timesAndVals[q] >= edges[i+1] ) {
 					output[i + x*j] /= nbin;
-					deriv[i + x*j] /= dbin;
+                    if( dbin != 0 ) {
+                        deriv[i + x*j] /= dbin;
+                    }
 					i++;
 					nbin = 0;
 					dbin = 0;
