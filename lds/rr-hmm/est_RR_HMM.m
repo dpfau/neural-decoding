@@ -83,4 +83,3 @@ UP = pinv( U(:,1:r)'*P21 );
 for i = 1:k2
     B_x(:,:,i) = U(:,1:r)'*P3x1(:,:,i)*UP;
 end
-    
