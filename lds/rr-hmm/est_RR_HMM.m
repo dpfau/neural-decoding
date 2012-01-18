@@ -1,4 +1,4 @@
-function [b_1 b_inf B_x] = est_RR_HMM( dat, r, k, c1, c2, c3, l1, l2, l3 )
+function [b_1 b_inf B_x] = est_RR_HMM( dat, r, k, c1, c2, c3, l)
 % Estimate a reduced-rank hidden markov model, a la Siddiqi, Boots and
 % Gordon.
 %
@@ -9,25 +9,18 @@ function [b_1 b_inf B_x] = est_RR_HMM( dat, r, k, c1, c2, c3, l1, l2, l3 )
 %   c1 - kernel centers for the past sequence
 %   c2 - kernel centers for the present point
 %   c3 - kernel centers for the future sequence
-%   l1 - kernel bandwidths for the past sequence
-%   l2 - kernel bandwidths for the present point
-%   l3 - kernel bandwidths for the future sequence
+%   l - kernel bandwidth
 
 assert( mod( size( c1, 1 ), size( dat{1}, 1 ) ) == 0, 'Past kernel centers are wrong size' );
 assert( mod( size( c3, 1 ), size( dat{1}, 1 ) ) == 0, 'Future kernel centers are wrong size' );
 assert( size( c2, 1 ) == size( dat{1}, 1 ), 'Present kernel centers are wrong size' );
 
-assert( size( c1, 2 ) == length( l1 ), 'Number of past kernels inconsistent' );
-assert( size( c2, 2 ) == length( l2 ), 'Number of present kernels inconsistent' );
-assert( size( c3, 2 ) == length( l3 ), 'Number of future kernels inconsistent' );
+n = size(c1,1)/size(dat{1},1); % number of past steps used for prediction
+m = size(c3,1)/size(dat{1},1); % number of future steps used for prediction
 
-l = size(dat{1},1);
-n = size(c1,1)/l; % number of past steps used for prediction
-m = size(c3,1)/l; % number of future steps used for prediction
-
-k1 = length( l1 );
-k2 = length( l2 );
-k3 = length( l3 );
+k1 = size(c1,2);
+k2 = size(c2,2);
+k3 = size(c3,2);
 
 phi  = [];
 psi  = [];
@@ -50,7 +43,7 @@ for i = 1:length(dat)
     zeta1 = zeros(k2,N);
     for j = 1:k2
         psi1(j,:)  = k( dat{i}(:,n+1:end-m) - c2(:,j)*ones(1,N) );
-        zeta1(j,:) = k( (dat{i}(:,n+1:end-m) - c2(:,j)*ones(1,N))/l2(j) );
+        zeta1(j,:) = k( (dat{i}(:,n+1:end-m) - c2(:,j)*ones(1,N))/l );
     end
     psi  = [psi psi1];
     zeta = [zeta zeta1];
