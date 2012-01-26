@@ -26,13 +26,13 @@ kern_present = train_stacked( l*n+(1:l), idx_kern(1:nkern) );
 kern_future  = train_stacked( (n+1)*l+1:end, idx_kern(1:nkern) );
 
 [u,s,~] = svd( kern_past - mean(kern_past,2)*ones(1,nkern) );
-proj_past = (1./s(1:k,1:k))*u(:,1:k)';
+proj_past = s(1:k,1:k)^-1*u(:,1:k)';
 
 mean_present = mean(kern_present,2);
 centered_present = kern_present - mean_present*ones(1,nkern);
 Q = chol(centered_present*centered_present'); % Used for generating from the predictive distribution
 [u,s,~] = svd( centered_present );
-proj_present = (1./s(1:l,1:l))*u';
+proj_present = s(1:l,1:l)^-1*u';
 
 kern_cv = train(:,n+idx_kern(nkern+1:end)); % points used for cross-validation
 proj_kern = proj_present*kern_present; % project kernel centers into subspace w/isotropic kernels
@@ -46,11 +46,13 @@ end
 
 cv_lik = zeros(100,1);
 for prec = 1:100
-    cv_lik(prec) = prec^l/(nkern*(pi*2)^l/2)*sum( sum( exp( -prec^2*cv_norm/2 ) ) );
+    cv_lik(prec) = prod( prec^l/(nkern*(pi*2)^l/2)*sum( exp( -prec^2*cv_norm/2 ) ) );
 end
 [~,prec] = max(cv_lik); % set precision to maximum held-out likelihood
 
 [u,s,~] = svd( kern_future - mean(kern_future,2)*ones(1,200) );
-proj_future = (1./s(1:k,1:k))*u(:,1:k)';
+proj_future = s(1:k,1:k)^-1*u(:,1:k)';
 
-[b_1, b_inf, B_x] = est_RR_HMM( {train}, 10, @(x) exp( -diag( x'*x ) ), kern_past, kern_present, kern_future, 1/prec );
+[b_1, b_inf, B_x] = est_RR_HMM( {train}, 10, @(x) exp( -column_squared_norm(x) ), ...
+    kern_past, kern_present, kern_future, ...
+    proj_past, proj_present, proj_future, 1/prec );
