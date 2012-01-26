@@ -1,4 +1,5 @@
 #include <string.h>
+#include <omp.h>
 #include "mex.h"
 
 /**
@@ -42,6 +43,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 	double *result = mxGetPr( plhs[0] );
     
 	mwIndex i, j, k, l;
+    #pragma omp parallel for
     for( i = 0; i < m; i++ ) {
         for( j = 0; j < n; j++ ) {
             for( k = 0; k < p; k++ ) {

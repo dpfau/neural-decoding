@@ -25,6 +25,7 @@ kern_past    = train_stacked( 1:l*n, idx_kern(1:nkern) );
 kern_present = train_stacked( l*n+(1:l), idx_kern(1:nkern) );
 kern_future  = train_stacked( (n+1)*l+1:end, idx_kern(1:nkern) );
 
+disp('Estimating kernel parameters...')
 [u,s,~] = svd( kern_past - mean(kern_past,2)*ones(1,nkern) );
 proj_past = s(1:k,1:k)^-1*u(:,1:k)';
 
@@ -34,6 +35,7 @@ Q = chol(centered_present*centered_present'); % Used for generating from the pre
 [u,s,~] = svd( centered_present );
 proj_present = s(1:l,1:l)^-1*u';
 
+disp('Finding kernel bandwidth by cross-validation...')
 kern_cv = train(:,n+idx_kern(nkern+1:end)); % points used for cross-validation
 proj_kern = proj_present*kern_present; % project kernel centers into subspace w/isotropic kernels
 proj_cv = proj_present*kern_cv; % project cross-validation data into subspace with isotropic kernels
@@ -49,10 +51,27 @@ for prec = 1:100
     cv_lik(prec) = prod( prec^l/(nkern*(pi*2)^l/2)*sum( exp( -prec^2*cv_norm/2 ) ) );
 end
 [~,prec] = max(cv_lik); % set precision to maximum held-out likelihood
+Q = Q/prec;
 
 [u,s,~] = svd( kern_future - mean(kern_future,2)*ones(1,200) );
 proj_future = s(1:k,1:k)^-1*u(:,1:k)';
 
-[b_1, b_inf, B_x] = est_RR_HMM( {train}, 10, @(x) exp( -column_squared_norm(x) ), ...
+disp('Estimating RR-HMM parameters...')
+k = @(x) exp( -column_squared_norm(x) );
+[b_1, b_inf, B_x] = est_RR_HMM( {train}, 10, k, ...
     kern_past, kern_present, kern_future, ...
     proj_past, proj_present, proj_future, 1/prec );
+
+disp('Calculating training log likelihood...')
+[train_log_like train_neg] = log_like( train, b_1, b_inf, B_x, k, proj_present, kern_present, l );
+disp('Calculating testing log likelihood...')
+[test_log_lik   test_neg]  = log_like( test, b_1, b_inf, B_x, k, proj_present, kern_present, l );
+
+
+disp('Generating data from model...')
+b_t = b_1;
+gen_from_model = zeros(l,1000);
+for i = 1:1000
+    gen_from_model(:,i) = generate( b_t, Q, c, b_inf, B_x );
+    b_t = update( b_t, gen_from_model(:,i), k, proj_present, kern_present, 1/prec, b_inf, B_x );
+end

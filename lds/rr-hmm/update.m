@@ -1,10 +1,11 @@
-function [b_t1 like] = update( b_t, x, k, c, l, b_inf, B_x )
+function [b_t1 like] = update( b_t, x, k, p, c, l, b_inf, B_x )
 % Update the belief state one step for an RR-HMM
 %
 % Inputs:
 %   b_t - belief state at time t
 %   x   - observation at time t
 %   k   - kernel function
+%   p   - projection from data space into kernel PCA space
 %   c   - 2D array of kernel centers
 %   l   - kernel bandwidth
 %   b_inf - parameter of observable HMM representation
@@ -18,7 +19,7 @@ function [b_t1 like] = update( b_t, x, k, c, l, b_inf, B_x )
 
 sig = zeros(size(c,2),1);
 for i = 1:length(sig)
-    sig(i) = k( (x - c(:,i))/l );
+    sig(i) = k( p*(x - c(:,i))/l );
 end
 sig = sig/sum(sig);
 
