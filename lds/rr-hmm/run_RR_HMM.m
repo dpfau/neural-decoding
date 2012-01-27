@@ -63,15 +63,15 @@ k = @(x) exp( -column_squared_norm(x) );
     proj_past, proj_present, proj_future, 1/prec );
 
 disp('Calculating training log likelihood...')
-[train_log_like train_neg] = log_like( train, b_1, b_inf, B_x, k, proj_present, kern_present, l );
+[train_log_like train_neg] = log_lik( train, b_1, b_inf, B_x, k, proj_present, kern_present, 1/prec );
 disp('Calculating testing log likelihood...')
-[test_log_lik   test_neg]  = log_like( test, b_1, b_inf, B_x, k, proj_present, kern_present, l );
+[test_log_lik   test_neg]  = log_lik( test, b_1, b_inf, B_x, k, proj_present, kern_present, 1/prec );
 
 
 disp('Generating data from model...')
 b_t = b_1;
 gen_from_model = zeros(l,1000);
 for i = 1:1000
-    gen_from_model(:,i) = generate( b_t, Q, c, b_inf, B_x );
+    gen_from_model(:,i) = generate( b_t, Q, kern_present, b_inf, B_x );
     b_t = update( b_t, gen_from_model(:,i), k, proj_present, kern_present, 1/prec, b_inf, B_x );
 end

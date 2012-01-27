@@ -30,6 +30,6 @@ for i = 1:length(sig)
     likenorm = likenorm + b_inf'*B_x(:,:,i)*b_t;
 end
 
-norm = b_inf'*B_sig_b_t; % normalizer for the update, numerator for the likelihood term
+norm = b_inf'*B_sig*b_t; % normalizer for the update, numerator for the likelihood term
 b_t1 = B_sig*b_t / norm;
 like = norm / likenorm;
