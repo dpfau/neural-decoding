@@ -2,7 +2,7 @@
 #include "mex.h"
 
 /**
-* add_vector.c - subtract a vector from every column of a matrix.
+* add_vector.c - add a vector to every column of a matrix.
 *   hopefully faster than the matlab conventions:
 *   x + y*ones(1,size(x,2)) or x + y(:,ones(1,size(x,2)))
 * 
