@@ -1,4 +1,4 @@
-function [map prec] = e_step( data, params, init )
+function [map prec delta] = e_step( data, params, init )
 % Given data and parameters for a latent-phase model, find the Laplace
 % approximation to the expected log likelihood by first finding the MAP
 % path, then taking a quadratic approximation of the log likelihood around
@@ -19,6 +19,7 @@ function [map prec] = e_step( data, params, init )
 % prec - bands of the precision matrix, which is tridiagonal (or block
 %   tridiagonal for higher dimension state spaces) due to conditional
 %   independence properties of state space models
+% delta - the change between the initial and final path
 % David Pfau, 2012
 
 opts = struct( 'GradObj', 'on', 'Display', 'iter', 'LargeScale', 'on', 'Hessian', 'on', 'HessMult', @hess_mult );
@@ -27,17 +28,21 @@ if nargin < 3
 else
     map = init;
 end
-map = fminunc(@(x) log_lik( data, x, params ), map, opts );
-[~,~,prec] = log_lik( data, map, params );
+[map,~,~,~,~,prec] = fminunc(@(x) log_lik( data, x, params ), map, opts );
+if nargin < 3
+    delta = norm( map - 0:params.dt:params.dt*(length(data)-1) );
+else
+    delta = norm( map - init );
+end
 % for t = 1:10
 %     [~,grad,Hinfo] = log_lik( data, map, params );
 %     v = randn(size(grad));
-%     hv = hess_mult( Hinfo, v );
+%     hv = hess_mult( Hinfo, v' );
 %     map = map + v*1e-8;
 %     [~,grad2,~] = log_lik( data, map, params );
 %     map = map - v*1e-8;
 %     hv2 = (grad2-grad)/1e-8;
-%     fprintf('Exact value: %d, Approx value: %d, Difference: %d\n',norm(hv),norm(hv2),norm(hv-hv2));
+%     fprintf('Exact value: %d, Approx value: %d, Difference: %d\n',norm(hv),norm(hv2),norm(hv'-hv2));
 % end
 
 % function test_d2sinct( map, params )
@@ -93,7 +98,7 @@ function y = interp( coord, template, k )
 % center), but close enough for our purposes.  If k is 1 or 2, gives the
 % first or second derivative of the interpolation wrt x
 
-y = template'*sinct(coord,k)*(length(template)/2/pi)^k; 
+y = template*sinct(coord,k)*(length(template)/2/pi)^k; 
 
 function coord = interp_coord( x, N ) 
 % Given continuous time points and the period of a signal, returns matrix 

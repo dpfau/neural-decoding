@@ -13,6 +13,5 @@ end
 function y = interp( x, template )
 
 N = length(template);
-phase = mod( x, 2*pi )*N/(2*pi); % map all points on the path into [0,length(template))
-coord = ones(N,1)*x*N/(2*pi) - (1:N)'*ones(1,size(phase,2));
-y = template'*(sin(pi*coord).*cot(pi*coord/N)/N) ; % Whittaker-Shannon interpolation
+coord = ones(N,1)*x*N/(2*pi) - (1:N)'*ones(1,size(x,2));
+y = template*sinct(coord,0); % Whittaker-Shannon interpolation
