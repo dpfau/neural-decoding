@@ -15,8 +15,13 @@ end
 map = make_init( data, thresh, up, .1 ); % initial estimate for phase path
 map = map(1:end-1);
 params = m_step( diff(data), N, map );
-delta = Inf;
-while delta > eps
-    [map,~,delta] = e_step( diff(data), params, map ); % initialize with path from previous step
+ll = Inf;
+ll_ = log_lik( diff(data), map, params );
+i = 0;
+while i < 10 || ll - ll_ > eps
+    i = i+1;
+    ll = ll_;
+    [map,prec,ll_] = e_step( diff(data), params, map ); % initialize with path from previous step
     params = m_step( diff(data), N, map );
+    fprintf('Iter %i - Log lik: %d\n',i,ll_);
 end

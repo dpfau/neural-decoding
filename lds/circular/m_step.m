@@ -16,9 +16,9 @@ function params = m_step( data, N, map, prec )
 % David Pfau, 2012
 
 assert( length(map) == length(data), 'Phase path and data are not the same length' )
+t0 = map(1);
+dt = mean(diff(map));
 if nargin < 4 % If we only have the mean of the posterior path probability
-    t0 = map(1);
-    dt = mean(diff(map));
     sig_dt = std(diff(map));
     coord = ones(N,1)*map*N/(2*pi) - (1:N)'*ones(1,size(map,2));
     template = data*pinv( sinct( coord, 0 ) ); % Since the template is a linear function of the coordinates, just minimize the mean squared error
