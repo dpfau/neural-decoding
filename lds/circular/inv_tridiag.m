@@ -11,33 +11,41 @@ function y = inv_tridiag( x )
 % David Pfau
 
 N = length(x.diag);
-v = zeros(N,1);
-u = zeros(N,1);
+v = zeros(1,N);
+u = zeros(1,N);
 
-d = zeros(N,1); % Diagonal of the UL decomposition
+d = zeros(1,N); % Diagonal of the UL decomposition
 d(end) = x.diag(end);
 for i = N-1:-1:1
     d(i) = x.diag(i) - x.off_diag(i)^2/d(i+1);
 end
 
-c = zeros(N,1); % Diagonal of the LU decomposition
+c = zeros(1,N); % Diagonal of the LU decomposition
 c(1) = x.diag(1);
 for i = 2:N
     c(i) = x.diag(i) - x.off_diag(i-1)^2/c(i-1);
 end
 
-v(1) = 1/d(1);
 k = 1;
+e = 0;
+f = log(d(1));
+v(1) = exp( -f );
 for i = 2:N
     k = -k;
-    v(i) = k*prod(x.off_diag(1:i-1))/prod(d(1:i));
+    e = e + log(x.off_diag(i-1));
+    f = f + log(d(i));
+    v(i) = k*exp( e - f );
 end
 
-u(end) = 1/c(end)/v(end);
 k = 1;
+g = 0;
+h = log(c(end)) + log(v(end));
+u(end) = exp( -h );
 for i = 1:N-1
     k = -k;
-    u(end-i) = k*prod(x.off_diag(end-i+1:end))/prod(c(end-i:end))/v(end);
+    g = g + log(x.off_diag(end-i+1));
+    h = h + log(c(end-i));
+    u(end-i) = k*exp( g - h );
 end
 
-y = struct('diag',u.*v,'off_diag',u(1:end-1).*v(2:end));
+y = struct('diag',real(u.*v),'off_diag',real(u(1:end-1).*v(2:end)));
