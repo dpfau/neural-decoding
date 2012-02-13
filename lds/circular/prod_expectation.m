@@ -1,4 +1,4 @@
-function [E_xt_xt E_xt_xt1] = prod_expectation( map, prec )
+function [E_xt_xt E_xt_xt1 covar] = prod_expectation( map, prec )
 % Given the mean and precision of a random vector X, returns the marginal
 % expectations of X(i)^2 and X(i)*X(i+1), assuming X is a Markov chain
 %
