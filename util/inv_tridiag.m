@@ -14,6 +14,9 @@ N = length(x.diag);
 v = zeros(1,N);
 u = zeros(1,N);
 
+lv = zeros(1,N);
+lu = zeros(1,N);
+
 d = zeros(1,N); % Diagonal of the UL decomposition
 d(end) = x.diag(end);
 for i = N-1:-1:1
@@ -26,26 +29,14 @@ for i = 2:N
     c(i) = x.diag(i) - x.off_diag(i-1)^2/c(i-1);
 end
 
-k = 1;
-e = 0;
-f = log(d(1));
-v(1) = exp( -f );
+lv(1) = -log(d(1));
 for i = 2:N
-    k = -k;
-    e = e + log(x.off_diag(i-1));
-    f = f + log(d(i));
-    v(i) = k*exp( e - f );
+    lv(i) = lv(i-1) + log(x.off_diag(i-1)) - log(d(i));
 end
 
-k = 1;
-g = 0;
-h = log(c(end)) + log(v(end));
-u(end) = exp( -h );
+lu(end) = -log(c(end)) - lv(end);
 for i = 1:N-1
-    k = -k;
-    g = g + log(x.off_diag(end-i+1));
-    h = h + log(c(end-i));
-    u(end-i) = k*exp( g - h );
+    lu(end-i) = lu(end-i+1) + log(x.off_diag(end-i+1)) - log(c(end-i));
 end
 
-y = struct('diag',real(u.*v),'off_diag',real(u(1:end-1).*v(2:end)));
+y = struct('diag',real(exp(lu+lv)),'off_diag',-real(exp(lu(1:end-1)+lv(2:end))));

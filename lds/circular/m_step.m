@@ -1,4 +1,4 @@
-function params = m_step( data, N, map, prec )
+function [params ecll fe] = m_step( data, N, map, prec )
 % Recovers maximum expected complete likelihood parameters of latent-phase
 % model given data, number of points in a template, the MAP phase over
 % time, and if available, the Hessian of the complete log likelihood, which
@@ -12,6 +12,10 @@ function params = m_step( data, N, map, prec )
 %   diagonal and off-diagonal of the precision matrix of the path
 %   posterior, which is tridiagonal due to the conditional independence of
 %   non-adjacent points
+% params - estimated parameters that maximize the expected complete log
+%   likelihood
+% ecll - the (negative) expected complete log likelihood
+% fe - the free energy, or ECLL plus the entropy of the path posterior
 %
 % David Pfau, 2012
 
@@ -35,6 +39,17 @@ else % With both the mean and covariance of the posterior path probability we ha
     F = (sinct0*sinct0') + (sinct1*sinct1') + 1/2*(sinct0*sinct2') + 1/2*(sinct2*sinct0') + 3/4*(sinct2*sinct2'); % sum_t E[sinct(coord,0)*sinct(coord,0)']
     template = Y'*pinv( F ); % All experimental evidence shows this is overthinking it and doesn't actually affect the result...maybe
     sig_temp = sqrt( ( template*F*template' -2*template*Y + data*data' )/T );
+    
+    ecll = ( -extt(1)/2 ...
+       - extt(end)/2 ...
+       - sum(extt(2:end-1)) ...
+       + map(end)*dt ...
+       - map(1)*dt ...
+       + sum(extt1) ...
+       - (T-1)*dt^2/2 )/sig_dt^2 ...
+       + ( -template*F*template'/2 + template*Y - data*data'/2 )/sig_temp^2 ...
+       - (T-1)*log(sig_dt) - T*log(sig_temp) - (2*T-1)*log(2*pi)/2;
+   fe = ecll - entropy( prec );
 end
 
 params = struct('t0',t0,'dt',dt,'sig_dt',sig_dt,'sig_temp',sig_temp,'template',template);
