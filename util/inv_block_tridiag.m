@@ -27,6 +27,6 @@ end
 y = struct('diag',zeros(k,k,N),'off_diag',zeros(k,k,N-1));
 y.diag(:,:,end) = UtU(:,:,end)^-1;
 for i = N-1:-1:1
-    y.off_diag(:,:,i) = UiU1(:,:,i)*y.diag(:,:,i+1);
+    y.off_diag(:,:,i) = -UiU1(:,:,i)*y.diag(:,:,i+1);
     y.diag(:,:,i) = UtU(:,:,i)^-1 - y.off_diag(:,:,i)*UiU1(:,:,i)';
 end
