@@ -1,4 +1,4 @@
-function [params ecll fe] = m_step( data, map, prec, f )
+function [params ecll fe] = m_step( data, map, prec, params )
 % Recovers maximum expected complete likelihood parameters of Poisson-LDS
 % model given data, the MAP path over time and the Hessian of the complete 
 % log likelihood, which is the precision matrix of the best Gaussian 
@@ -26,16 +26,17 @@ Ptt   = sum(covar.diag(:,:,2:end),3) + map(:,2:end)*map(:,2:end)';
 A = (Ptt1/Pt1t1)';
 Q = 1/(T-1)*(Ptt - A*Ptt1'); % This part is nearly identical to the standard LDS case
 
-aug_covar = [ covar.diag, zeros(k,1,N); zeros(1,k+1,N) ]; % Augment covariance with zeros for bias term
-Cb = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ) ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
-params = struct('A',A,'C',Cb(:,1:end-1),'Q',Q,'b',Cb(:,end),'f',f);
+aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
+opts = optimset('GradObj','on','Display','iter');
+Cb = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
+params = struct('A',A,'C',Cb(:,1:end-1),'Q',Q,'b',Cb(:,end),'f',params.f);
 
 function [f grad] = data_ll( C, data, map, covar )
 
 Cmu = C*map;
-sigCt = tprod( covar.diag, [1 -1 3], C, [2 -1] );
+sigCt = tprod( covar, [1 -1 3], C, [2 -1] );
 CsigCt = tprod( sigCt, [-1 1 2], C, [1 -1] );
 
 f = sum( sum( exp( Cmu + 1/2*CsigCt ) - data.*Cmu ) );
-grad = tprod( exp( Cmu + 1/2*CsigCt ), [1 -1], tprod( map, [1 3], ones(1,size(C,1)), [1 2] ) + sigCt, [2 1 -1] ) ...
+grad = tprod( exp( Cmu + 1/2*CsigCt ), [1 -1], tprod( map, [1 3], ones(size(C,1),1), 2 ) + sigCt, [2 1 -1] ) ...
      - tprod( data, [1 -1], map, [2 -1] );

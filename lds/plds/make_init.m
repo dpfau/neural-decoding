@@ -8,9 +8,9 @@ s(s>0.99) = 0.99;
 A = u*s*v';
 
 C = randn(size(data,1),k);
-Q = randn(k);
+Q = 0.2*randn(k);
 Q = Q*Q';
-b = 0.1*randn(size(data,1));
+b = 0.1*randn(size(data,1),1);
 f = @(x,y) exp(x);
 
 params = struct('A',A,'C',C,'Q',Q,'b',b,'f',f);

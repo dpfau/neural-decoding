@@ -8,7 +8,7 @@ function y = inv_block_tridiag( x )
 % David Pfau, 2012
 
 N = size(x.diag_center,2); % Number of blocks
-k = size(x.diag_center,1); % size of each block
+k = size(x.diag_left,1); % size of each block
 UtU = zeros(k,k,N); % U'*U, where U is a diagonal block of the Cholesky decomposition of the block-tridiagonal matrix
 UiU1 = zeros(k,k,N-1); % U^-1*U1, where U is a diagonal block and U1 an off-diagonal block of the block-tridiagonal matrix
 U1tU1 = zeros(k,k,N-1); % U1'*U1, U1 is off-diagonal block
