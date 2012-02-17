@@ -1,11 +1,11 @@
-function [x y] = gen( params, len, x0 )
+function [y x] = gen( params, len, x0 )
 
-y = zeros( size( params.A, 1 ), len );
+x = zeros( size( params.A, 1 ), len );
 
-yt = x0;
+xt = x0;
 R = chol(params.Q);
 for i = 1:len
-    y(:,i) = yt;
-    yt = params.A*yt + R*randn(size(R,2),1);
+    x(:,i) = xt;
+    xt = params.A*xt + R*randn(size(R,2),1);
 end
-x = poissrnd( params.f( add_vector( params.C*y, params.b ), 0 ) );
+y = poissrnd( params.f( add_vector( params.C*x, params.b ), 0 ) );
