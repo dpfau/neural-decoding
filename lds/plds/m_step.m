@@ -27,9 +27,15 @@ A = (Ptt1/Pt1t1)';
 Q = 1/(T-1)*(Ptt - A*Ptt1'); % This part is nearly identical to the standard LDS case
 
 aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
-opts = optimset('GradObj','on','Display','iter');
-Cb = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
+opts = optimset('GradObj','on','Display','off');
+[Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
+
 params = struct('A',A,'C',Cb(:,1:end-1),'Q',Q,'b',Cb(:,end),'f',params.f);
+Qinv = Q^-1;
+ecll = dat_ll + 1/2*sum( sum( sum( tprod( Qinv, [1 -1], covar.diag(:,:,2:end), [-1 2 3] ) ...
+    - 2*tprod( Qinv*A, [1 -1], covar.off_diag, [-1 2 3] ) ...
+    + tprod( A'*Qinv*A, [1 -1], covar.diag(:,:,1:end-1), [-1 2 3] ) ) ) );
+fe = dat_ll - entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
 
