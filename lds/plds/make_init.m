@@ -1,4 +1,4 @@
-function [params map] = make_init( data, k )
+function [map params] = make_init( data, k )
 % For now, a random initialization of a Poisson-LDS model.  Definitely
 % should implement more justified initialization later
 

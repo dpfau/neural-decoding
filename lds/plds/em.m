@@ -14,6 +14,6 @@ while i < maxIter && ( i < 10 || fe - fe_ > eps )
     i = i+1;
     fe = fe_;
     [map,prec,xll] = e_step( data, params, map ); % initialize with path from previous step
-    [params,ecll,fe_] = m_step( data, map, prec, params.f );
+    [params,ecll,fe_] = m_step( data, map, prec, params );
     fprintf('Iter: %4i\tFE: %d\tECLL: %d\tLatent LL: %d\n',i,fe_,ecll,xll);
 end
