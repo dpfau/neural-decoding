@@ -29,9 +29,8 @@ function [ll grad Hinfo] = log_lik( data, map, params )
 %
 % David Pfau, 2012
 
-N = size(map,2);
 mapdiff = map(:,2:end) - params.A*map(:,1:end-1);
-Cxb = add_vector( params.C*map, params.b );
+Cxb = [params.C, params.b]*[map; ones(1,size(map,2))];
 fCxb  = params.f( Cxb, 0 );
 fCxb1 = params.f( Cxb, 1 );
 fCxb2 = params.f( Cxb, 2 );

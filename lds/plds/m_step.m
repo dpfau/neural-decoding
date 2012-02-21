@@ -27,15 +27,13 @@ A = (Ptt1/Pt1t1)';
 Q = 1/(T-1)*(Ptt - A*Ptt1'); % This part is nearly identical to the standard LDS case
 
 aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
-opts = optimset('GradObj','on','Display','off');
+opts = optimset('GradObj','on','Display','iter');
 [Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
 
-params = struct('A',A,'C',Cb(:,1:end-1),'Q',Q,'b',Cb(:,end),'f',params.f);
+params = struct( 'A', A, 'C', Cb(:,1:end-1), 'Q', Q, 'b', Cb(:,end), 'f', params.f );
 Qinv = Q^-1;
-ecll = dat_ll + 1/2*sum( sum( sum( tprod( Qinv, [1 -1], covar.diag(:,:,2:end), [-1 2 3] ) ...
-    - 2*tprod( Qinv*A, [1 -1], covar.off_diag, [-1 2 3] ) ...
-    + tprod( A'*Qinv*A, [1 -1], covar.diag(:,:,1:end-1), [-1 2 3] ) ) ) );
-fe = dat_ll - entropy( prec ); 
+ecll = dat_ll + 1/2*sum( sum( Qinv*Pt1t1 - 2*Qinv*A*Ptt1 + A'*Qinv*A*Ptt ) );
+fe = ecll - entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
 
@@ -43,6 +41,40 @@ Cmu = C*map;
 sigCt = tprod( covar, [1 -1 3], C, [2 -1] );
 CsigCt = tprod( sigCt, [-1 1 2], C, [1 -1] );
 
-f = sum( sum( exp( Cmu + 1/2*CsigCt ) - data.*Cmu ) );
-grad = tprod( exp( Cmu + 1/2*CsigCt ), [1 -1], tprod( map, [1 3], ones(size(C,1),1), 2 ) + sigCt, [2 1 -1] ) ...
-     - tprod( data, [1 -1], map, [2 -1] );
+f = sum( sum( exp( 1/2*CsigCt ) ) );
+covardiag = zeros(size(map));
+for i = 1:size(map,2)
+    covardiag(:,i) = diag(covar(:,:,i));
+end
+grad = (exp( 1/2*CsigCt )*covardiag').*C;
+% f = sum( sum( exp( Cmu + 1/2*CsigCt ) - data.*Cmu ) );
+% grad = exp( Cmu + 1/2*CsigCt )*map' + exp( Cmu + 1/2*CsigCt ) ...
+%      - data*map';
+
+function test_data_ll( C, data, map, covar )
+        
+[fx,grad] = data_ll( C, data, map, covar );
+for i = 1:numel(C)
+    C(i) = C(i) + 1e-8;
+    fx_ = data_ll( C, data, map, covar );
+    fprintf('Exact gradient: %d, Approximate gradient: %d\n',grad(i),(fx_-fx)*1e8);
+    C(i) = C(i) - 1e-8;
+end
+ 
+% function f = mc_data_ll( C, data, map, covar, t )
+% % Instead of calculating data part of expected complete log likelihood
+% % directly, sample Monte Carlo estimate
+% 
+% k = size(covar,1);
+% N = size(covar,3);
+% Q = zeros(k,k*N);
+% for i = 1:N
+%     Q(:,(i-1)*k + (1:k)) = chol(covar(:,:,i));
+% end
+% 
+% f = zeros(t,1);
+% for i = 1:t
+%     z = map + reshape( Q*randn(numel(map),1), k, N );
+%     f(i) = sum( sum( exp( C*[z; ones(1,size(z,2))] ) - data.*C*[z; ones(1,size(z,2))] ) );
+% end
+        

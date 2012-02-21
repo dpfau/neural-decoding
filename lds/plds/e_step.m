@@ -17,6 +17,6 @@ function [map prec ll] = e_step( data, params, init )
 % ll - log likelihood of the latent path at the end of the E step
 % David Pfau, 2012
 
-opts = struct( 'GradObj', 'on', 'Display', 'off', 'LargeScale', 'on', 'Hessian', 'on', 'HessMult', @hess_mult );
+% opts = struct( 'GradObj', 'on', 'Display', 'off', 'LargeScale', 'on', 'Hessian', 'on', 'HessMult', @hess_mult );
 map = init;
-[map,ll,~,~,~,prec] = fminunc(@(x) log_lik( data, x, params ), map, opts );
+[map,ll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8 );
