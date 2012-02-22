@@ -2,9 +2,9 @@ function [map params] = make_init( data, k )
 % For now, a random initialization of a Poisson-LDS model.  Definitely
 % should implement more justified initialization later
 
-A = eye(k);
+A = 0.9*eye(k);
 
-cQ = 0.01*eye(k);
+cQ = 0.1*eye(k);
 map = zeros(k,size(data,2));
 for i = 2:size(data,2)
     map(:,i) = cQ*randn(k,1) + map(:,i-1);

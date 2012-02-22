@@ -1,7 +1,10 @@
-function [x fx Hinfo] = newtons_method( f, x0, eps )
+function [x fx Hinfo] = newtons_method( f, x0, eps, verbose )
 
-if nargin == 2
-    eps = 1e-6;
+if nargin < 4
+    verbose = 0;
+    if nargin == 2
+        eps = 1e-6;
+    end
 end
 
 fx0 = Inf;
@@ -19,10 +22,12 @@ while fx0 - fx > eps
     end
     
     x = reshape( x0(:) - H\grad(:), size(x0) );
-    while f(x) >= fx0 % If we overshoot the minimum
+    while f(x) - eps >= fx0 || isnan(f(x)) % If we overshoot the minimum
         x = x0 + (x - x0)/2;
     end
     [fx,grad,Hinfo] = f(x);
-    fprintf('Iter: %i, f(x) = %d\n',i,fx);
+    if verbose
+        fprintf('Iter: %i, f(x) = %d\n',i,fx);
+    end
     x0 = x;
 end
