@@ -19,6 +19,6 @@ while i < maxIter && ( i < 10 || fe - fe_ > eps )
     i = i+1;
     fe = fe_;
     [map,cll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8 ); % Initialize with path from previous step
-    [params,cll_,cll__,ecll,ecll_,ecll__,fe_] = m_step( data, map, prec, params );
-    fprintf('Iter: %4i\tECLL: %2.4d -> %2.4d -> %2.4d\tLatent LL: %2.4d -> %2.4d -> %2.4d\n',i,ecll,ecll_,ecll__,cll,cll_,cll__);
+    [params,ecll,fe_] = m_step( data, map, prec, params );
+    fprintf('Iter: %4i\tECLL: %2.4d\tLatent LL: %2.4d\n',i,ecll,cll);
 end

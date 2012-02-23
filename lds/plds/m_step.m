@@ -1,4 +1,4 @@
-function [params cll cll_ ecll ecll_ ecll__ fe] = m_step( data, map, prec, params )
+function [params ecll fe] = m_step( data, map, prec, params )
 % Recovers maximum expected complete likelihood parameters of Poisson-LDS
 % model given data, the MAP path over time and the Hessian of the complete 
 % log likelihood, which is the precision matrix of the best Gaussian 
@@ -24,15 +24,8 @@ Ptt1  = (sum(covar.off_diag,3) + map(:,1:end-1)*map(:,2:end)')';
 Pt1t1 = sum(covar.diag(:,:,1:end-1),3) + map(:,1:end-1)*map(:,1:end-1)';
 Ptt   = sum(covar.diag(:,:,2:end),3) + map(:,2:end)*map(:,2:end)';
 
-ecll = data_ll( [params.C,params.b], data, [map;ones(1,size(map,2))], aug_covar ) ...
-     + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
-
 params.A = Ptt1/Pt1t1;
-params.Q = 1/(T-1)*(Ptt - params.A*Ptt1'); % This part is nearly identical to the standard LDS case
-
-cll = log_lik( data, map, params );
-ecll_ = data_ll( [params.C,params.b], data, [map;ones(1,size(map,2))], aug_covar ) ...
-      + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
+params.Q = (Ptt - params.A*Ptt1')/(T-1); % This part is nearly identical to the standard LDS case
 
 opts = optimset('GradObj','on','Display','off');
 [Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
@@ -40,8 +33,8 @@ opts = optimset('GradObj','on','Display','off');
 params.C = Cb(:,1:end-1);
 params.b = Cb(:,end);
 
-cll_ = log_lik( data, map, params );
-ecll__ = dat_ll + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
+ecll = dat_ll + (size(map,2)-1)/2*log(det(params.Q)) ...
+     + 1/2*( trace( params.Q\Ptt - 2*(params.Q\params.A*Ptt1') + params.A'*(params.Q\params.A*Pt1t1) ) );
 fe = ecll - entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
