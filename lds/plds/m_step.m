@@ -1,4 +1,4 @@
-function [params ecll fe] = m_step( data, map, prec, params )
+function [params cll cll_ ecll ecll_ ecll__ fe] = m_step( data, map, prec, params )
 % Recovers maximum expected complete likelihood parameters of Poisson-LDS
 % model given data, the MAP path over time and the Hessian of the complete 
 % log likelihood, which is the precision matrix of the best Gaussian 
@@ -18,21 +18,30 @@ function [params ecll fe] = m_step( data, map, prec, params )
 T = size(map,2);
 k = size(map,1);
 covar = inv_block_tridiag( prec );
+aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
 
 Ptt1  = (sum(covar.off_diag,3) + map(:,1:end-1)*map(:,2:end)')';
 Pt1t1 = sum(covar.diag(:,:,1:end-1),3) + map(:,1:end-1)*map(:,1:end-1)';
 Ptt   = sum(covar.diag(:,:,2:end),3) + map(:,2:end)*map(:,2:end)';
 
-A = Ptt1/Pt1t1;
-Q = 1/(T-1)*(Ptt - A*Ptt1'); % This part is nearly identical to the standard LDS case
+ecll = data_ll( [params.C,params.b], data, [map;ones(1,size(map,2))], aug_covar ) ...
+     + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
 
-aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
+params.A = Ptt1/Pt1t1;
+params.Q = 1/(T-1)*(Ptt - params.A*Ptt1'); % This part is nearly identical to the standard LDS case
+
+cll = log_lik( data, map, params );
+ecll_ = data_ll( [params.C,params.b], data, [map;ones(1,size(map,2))], aug_covar ) ...
+      + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
+
 opts = optimset('GradObj','on','Display','off');
 [Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
 
-params = struct( 'A', A, 'C', Cb(:,1:end-1), 'Q', Q, 'b', Cb(:,end), 'f', params.f );
-Qinv = Q^-1;
-ecll = dat_ll + 1/2*sum( sum( Qinv*Pt1t1 - 2*Qinv*A*Ptt1 + A'*Qinv*A*Ptt ) );
+params.C = Cb(:,1:end-1);
+params.b = Cb(:,end);
+
+cll_ = log_lik( data, map, params );
+ecll__ = dat_ll + 1/2*sum( sum( params.Q\Pt1t1 - 2*params.Q\params.A*Ptt1 + params.A'*params.Q\params.A*Ptt ) );
 fe = ecll - entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
@@ -54,22 +63,4 @@ grad = fCx*map' + tprod( fCx, [1 -1], sigCt, [2 1 -1] ) ...
 %     fx_ = data_ll( C, data, map, covar );
 %     fprintf('Exact gradient: %d, Approximate gradient: %d\n',grad(i),(fx_-fx)*1e8);
 %     C(i) = C(i) - 1e-8;
-% end
- 
-% function f = mc_data_ll( C, data, map, covar, t )
-% % Instead of calculating data part of expected complete log likelihood
-% % directly, sample Monte Carlo estimate
-% 
-% k = size(covar,1);
-% N = size(covar,3);
-% Q = zeros(k,k*N);
-% for i = 1:N
-%     Q(:,(i-1)*k + (1:k)) = chol(covar(:,:,i));
-% end
-% 
-% f = zeros(t,1);
-% for i = 1:t
-%     z = map + reshape( Q*randn(numel(map),1), k, N );
-%     f(i) = sum( sum( exp( C*[z; ones(1,size(z,2))] ) - data.*C*[z; ones(1,size(z,2))] ) );
-% end
-        
+% end   
