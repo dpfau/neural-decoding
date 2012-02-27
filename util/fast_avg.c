@@ -41,8 +41,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
 	mwIndex i, j;
 	mwSize q, n;
-	int nbin, dbin; // number of elements in the bin, by which we divide the running sum once we reach the end of the bin.
-					// dbin is almost always the same, except for the first bin when presumably we have one fewer derivative to average.
+	int nbin, dbin; 
+	/* number of elements in the bin, by which we divide the running sum once we reach the end of the bin. dbin is almost always the same, except for the first bin when presumably we have one fewer derivative to average.*/
 	for( j = 0; j < y; j++ ) {
 		mxArray *cvr = mxGetCell( prhs[1], j );
 		n = mxGetM( cvr );
@@ -50,7 +50,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 		i = -1;
 		for( q = 0; q < n; q++ ) {
 			if( i == -1 && timesAndVals[q] >= edges[0] ) {
-				while( i+1 < x && timesAndVals[q] >= edges[i+1] ) { // Align first covariate time that falls within the edges to the correct edge
+				/* Align first covariate time that falls within the edges to the correct edge */
+				while( i+1 < x && timesAndVals[q] >= edges[i+1] ) { 
 					i++;
 				}
 				if( i+1 == x ) {
