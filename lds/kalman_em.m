@@ -56,7 +56,7 @@ ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
 ll = sum(lls);
 i = 0;
-while ll - ll0 > tol && i < maxIter
+while abs( ll - ll0 ) > tol && i < maxIter
     i = i+1;
     fprintf('Iter %i: Data log likelihood - %d\n',i,ll);
     z0 = z(:,1);
