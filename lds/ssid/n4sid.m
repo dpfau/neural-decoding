@@ -17,7 +17,7 @@ B = ABCD( 1:n, n+1:end );
 C = ABCD( n+1:end, 1:n );
 D = ABCD( n+1:end, n+1:end );
 
-resid = [X(:,2:end); Yii] - ABCD*[X(:,1:end-1); Uii];
+resid = [X(:,2:end); y(:,1:size(X,2)-1)] - ABCD*[X(:,1:end-1); u(:,1:size(X,2)-1)];
 covar = resid * resid';
 Q = covar( 1:n, 1:n );
 R = covar( n+1:end, n+1:end );

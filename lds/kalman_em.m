@@ -1,4 +1,4 @@
-function [A C Q R z0 V0 B D] = kalman_em(y,n,tol,varargin)
+function [A C Q R z0 V0 B D] = kalman_em(y,n,tol,maxIter,varargin)
 %% Initialize variables
 args = {}; % the non-standard arguments to be passed to the Kalman smoother
 vn = {'A','C','Q','R','z0','V0'};
@@ -34,6 +34,7 @@ end
 if exist('u','var')
     if ~exist('B','var')
         B = randn(n,size(u,1)); 
+        args = [args,'B',B];
     else
         assert( size(B,1) == n, 'B has incorrect number of rows' );
         assert( size(B,2) == size(u,1), 'B has incorrect number of columns' );
@@ -43,6 +44,7 @@ if exist('u','var')
         assert( size(D,2) == size(u,1), 'D has incorrect number of columns' );
     elseif nargout == 8
         D = randn(m,size(u,1));
+        args = [args,'D',D];
     end
 elseif nargout > 6
     error('Missing input data!');
@@ -53,8 +55,10 @@ y = y - mean(y,2)*ones(1,T);
 ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
 ll = sum(lls);
-while abs(ll - ll0) > tol
-    fprintf('Data log likelihood: %d\n',ll);
+i = 0;
+while ll - ll0 > tol && i < maxIter
+    i = i+1;
+    fprintf('Iter %i: Data log likelihood - %d\n',i,ll);
     z0 = z(:,1);
     z1 = z(:,1)-mean(z(:,1));
     V0 = V(:,:,1) + z1*z1';
