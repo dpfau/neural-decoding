@@ -25,5 +25,5 @@ if isfield( Hinfo, 'diag_center' )
                   [s_diag, s_off_diag, s_off_diag] );
 else
     N = length(Hinfo.diag);
-    spH = sparse( [1:N,1:N-1,2:N], [1:N,2:N,1:N-1], [Hinfo.diag; Hinfo.off_diag; Hinfo.off_diag] );
+    spH = sparse( [1:N,1:N-1,2:N], [1:N,2:N,1:N-1], [Hinfo.diag, Hinfo.off_diag, Hinfo.off_diag] );
 end

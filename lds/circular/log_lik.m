@@ -3,7 +3,8 @@ function [ll grad Hinfo] = log_lik( data, x, params )
 coord = interp_coord( x, length(params.template) );
 ll = sum( -( interp( coord, params.template, 0 ) - data ).^2/(2*params.sig_temp^2) ) + ...
     sum( -( (x(2:end)-x(1:end-1)) - params.dt ).^2/(2*params.sig_dt^2) ) + ...
-    -( x(1) - params.t0 )^2/(2*params.sig_dt^2);
+    -( x(1) - params.t0 )^2/(2*params.sig_dt^2) + ...
+    - length(data)*log(params.sig_temp) - length(data)*log(params.sig_dt) - length(data)*log(2*pi);
 
 grad = zeros(size(x));
 grad(1) = (params.t0 - x(1))/params.sig_dt^2;
