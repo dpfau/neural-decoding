@@ -9,11 +9,15 @@ function y = log_det_tridiag( x )
 % much as possible
 % David Pfau, 2012
 
-z = 0;
-y = log(x.diag(1));
-for i = 2:length(x.diag)
-    w = x.diag(i)*exp(y - z) - x.off_diag(i-1)^2; % w = y(i)/y(i-2) = a(
-    foo = y;
-    y = log(w)+z;
-    z = foo;
+if isfield(x,'diag')
+    z = 0;
+    y = log(x.diag(1));
+    for i = 2:length(x.diag)
+        w = x.diag(i)*exp(y - z) - x.off_diag(i-1)^2;
+        foo = y;
+        y = log(w)+z;
+        z = foo;
+    end
+else
+    y = 2*sum(log(diag(chol(sparse_hess(x)))));
 end

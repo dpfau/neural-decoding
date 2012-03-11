@@ -1,6 +1,7 @@
 function ecll = exp_comp_log_lik( data, map, prec, params )
-% The expected complete log likelihood given data, Gaussian approximation
-% to latent state posterior, and parameters for a Poisson-LDS model
+% The *negative* expected complete log likelihood given data, Gaussian 
+% approximation to latent state posterior, and parameters for a Poisson-LDS 
+% model.  The M step should minimize this, or maximize the proper ECLL.
 
 k = size(map,1);
 T = size(map,2);

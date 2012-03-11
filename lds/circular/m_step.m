@@ -49,7 +49,7 @@ else % With both the mean and covariance of the posterior path probability we ha
        - (T-1)*dt^2/2 )/sig_dt^2 ...
        + ( -template*F*template'/2 + template*Y - data*data'/2 )/sig_temp^2 ...
        - (T-1)*log(sig_dt) - T*log(sig_temp) - (2*T-1)*log(2*pi)/2;
-   fe = ecll - entropy( prec );
+   fe = ecll + entropy( prec );
 end
 
 params = struct('t0',t0,'dt',dt,'sig_dt',sig_dt,'sig_temp',sig_temp,'template',template);

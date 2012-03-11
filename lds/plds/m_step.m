@@ -35,7 +35,7 @@ params.b = Cb(:,end);
 
 ecll = dat_ll + (size(map,2)-1)/2*log(det(params.Q)) ...
      + 1/2*( trace( params.Q\Ptt - 2*(params.Q\params.A*Ptt1') + params.A'*(params.Q\params.A*Pt1t1) ) );
-fe = ecll - entropy( prec ); 
+fe = ecll + entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
 
