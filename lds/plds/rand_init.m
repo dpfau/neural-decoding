@@ -1,4 +1,4 @@
-function [params data map] = rand_init( k, N, T )
+function [params map data] = rand_init( k, N, T )
 % For now, a random initialization of a Poisson-LDS model.  Definitely
 % should implement more justified initialization later
 

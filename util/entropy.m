@@ -9,4 +9,4 @@ elseif isfield(prec,'diag_center')
 else
     error('Not a recognized format for precision matrix')
 end
-ent = 1/2*( N*log(2*pi) + N + log_det_tridiag( prec ) );
+ent = 1/2*( -N*log(2*pi) - N + log_det_tridiag( prec ) );

@@ -1,4 +1,4 @@
-function [A B C D x0 s] = moesp( y, u, i, N, opts )
+function [A B C D x0 s B1 D1 x1] = moesp( y, u, i, N, opts )
 % Subspace identification for the linear time invariant system:
 % x(t+1) = A*x(t) + B*u(t)
 % y(t) = C*x(t) + D*u(t)
@@ -39,7 +39,7 @@ m = size( u, 1 );
 opts = default_opts( opts );
 
 %% Reconstruct A, C
-Oi = build_proj( y, u, i, opts );
+[Oi yh] = build_proj( y, u, i, opts );
 [r,s,~] = svd( Oi );
 n = find( diag( s )/s(1) < opts.tol, 1 ) - 1; % approximate order of the system
 if isempty( n )
@@ -75,10 +75,20 @@ if opts.instant
     x0 = xx(1:n);
     D = reshape( xx( n + (1:l*m) ), l, m );
     B = reshape( xx(n + l*m + 1:end ), n, m );
+    
+    xx = pinv( [F1, F2, F3], 1e-6 ) * yh( 1:l*N )';
+    x1 = xx(1:n);
+    D1 = reshape( xx( n + (1:l*m) ), l, m );
+    B1 = reshape( xx(n + l*m + 1:end ), n, m );
 else
     xx = pinv( [F1 F3], 1e-6 ) * y( 1:l*N )';
     x0 = xx(1:n);
     B = reshape( xx(n+1:end), n, m );
     D = zeros(l,m);
+    
+    xx = pinv( [F1 F3], 1e-6 ) * yh( 1:l*N )';
+    x1 = xx(1:n);
+    B1 = reshape( xx(n+1:end), n, m );
+    D1 = zeros(l,m);
 end
 s = diag(s);

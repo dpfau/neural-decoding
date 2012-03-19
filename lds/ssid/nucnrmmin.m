@@ -1,4 +1,4 @@
-function Oi = nucnrmmin( y, Y, Un, i, opts )
+function [Oi yh] = nucnrmmin( y, Y, Un, i, opts )
 % Depending on the options specified, returns the appropriate matrix for
 % parameter reconstruction in subspace ID.  For no output noise, just
 % return Y*Un.  For Gaussian output noise, perform nuclear norm
@@ -9,6 +9,7 @@ function Oi = nucnrmmin( y, Y, Un, i, opts )
 switch opts.noise
     case 'none'
         Oi = Y*Un;
+        yh = y;
     case 'gauss'
         % For Gaussian noise, can do nuclear norm plus Gaussian
         % likelihood minimization directly
