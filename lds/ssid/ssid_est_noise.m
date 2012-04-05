@@ -33,5 +33,7 @@ for i = 1:s
     ee = [ee; (e(:,1+i:end)*e(:,1:end-i)')/(size(e,2)-i)];
 end
 S = pinv(CA)*ee*pinv(C');
+[u,s,v] = svd(S);
+S = (0.5*(u+v))*s*(0.5*(u+v))'; % Symmetrize
 Q = S-A*S*A';
 R = (e*e')/size(e,2) - C*S*C';
