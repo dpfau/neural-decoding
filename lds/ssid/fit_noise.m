@@ -45,27 +45,45 @@ for i = 1:size(S,1)
     end
 end
 fprintf('Iter\tf(x)\tmax(imag(eig))\tmin(real(eig))\n');
-fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(S(:),E1,A,C,1),max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
+fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(S(:),E0,E1,A,C,1),max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
 for t = 1:60
-    [S,fval] = constrained_newton(@(x) obj(x,E1,A,C,1e10*2^-t), S(:), symm, zeros(size(symm,1),1), 1e-8);
+    [S,fval] = constrained_newton(@(x) obj(x,E0,E1,A,C,1e10*2^-t), S(:), symm, zeros(size(symm,1),1), 1e-8);
     fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
 end
 S = reshape(S,size(A));
 Q = S-A*S*A';
 R = E0 - C*S*C';
 
-function [f grad hess] = obj(X,E,A,C,t)
+function [f grad hess] = obj(X,E0,E1,A,C,t)
 
 X = reshape(X,size(A));
-foo = E-C*A*X*C';
-bar = inv(X-A*X*A')';
-f    = 0.5*norm(foo,'fro')^2 - t*log(det(X-A*X*A'));
-grad = -A'*C'*foo*C - t*(bar-A'*bar*A);
+foo = E1-C*A*X*C';
+bar = X-A*X*A';
+sna = E0-C*X*C'; 
+f    = 0.5*norm(foo,'fro')^2 - t*log(det(bar)) - t*log(det(sna));
+grad = -A'*C'*foo*C - t*(inv(bar)'-A'*(bar'\A)) + t*C'*inv(sna)'*C;
 hess = zeros(numel(X));
 for i = 1:numel(X)
     foo = zeros(size(hess,2),1); 
     foo(i) = 1; 
-    hess(:,i) = hess_mult(X,A,C,t,foo);
+    hess(:,i) = hess_mult(X,A,C,E0,t,foo);
+end
+    
+function Hv = hess_mult(X,A,C,E0,t,v)
+
+X = reshape(X,size(A));
+m = size(A,2);
+n = size(C,2);
+Hv = zeros(size(v));
+bar = inv(X-A*X*A')';
+sna = inv(E0-C*X*C')';
+for i = 1:size(v,2)
+    sig = reshape(v(:,i),m,n);
+    w = A'*(C'*C)*A*sig*(C'*C) ...
+        + t*bar*(sig-A*sig*A')'*bar ...
+        - t*A'*bar*(sig-A*sig*A')'*bar*A ...
+        - t*C'*sna*(E0-C*sig*C')'*sna*C;
+    Hv(:,i) = w(:);
 end
 
 function [x fx] = constrained_newton(f,x0,A,b,eps)
@@ -90,17 +108,4 @@ while abs(fx - fx_) > eps
         [fx,grad,hess] = f(x + a*dx);
     end
     x = x + a*dx;
-end
-    
-function Hv = hess_mult(X,A,C,t,v)
-
-X = reshape(X,size(A));
-m = size(A,2);
-n = size(C,2);
-Hv = zeros(size(v));
-bar = inv(X-A*X*A')';
-for i = 1:size(v,2)
-    sig = reshape(v(:,i),m,n);
-    w = A'*(C'*C)*A*sig*(C'*C) + t*bar*(sig-A*sig*A')'*bar - t*A'*bar*(sig-A*sig*A')'*bar*A;
-    Hv(:,i) = w(:);
 end
