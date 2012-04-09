@@ -63,12 +63,6 @@ X = reshape(X,size(A));
 f = main_f + t*bar1_f + t*bar2_f;
 grad = main_grad + t*bar1_grad + t*bar2_grad;
 hess = main_hess + t*bar1_hess + t*bar2_hess;
-% foo = E1-C*A*X*C';
-% bar = X-A*X*A';
-% sna = E0-C*X*C'; 
-% f    = 0.5*norm(foo,'fro')^2 - t*log(det(bar)) - t*log(det(sna));
-% grad = -A'*C'*foo*C - t*(inv(bar)'-A'*(bar'\A)) + t*C'*inv(sna)'*C;
-% hess = hess_mult_to_hess(@(x) hess_mult(X,A,C,E0,t,x), numel(X));
 
 function [f grad hess] = main_obj(X,A,C,E1)
 
@@ -112,23 +106,6 @@ m = size(C,2);
 sig = reshape(v,m,m);
 w = C'*foo*(C*sig*C')'*foo*C;
 Hv = w(:);
-
-% function Hv = hess_mult(X,A,C,E0,t,v)
-% 
-% X = reshape(X,size(A));
-% m = size(A,2);
-% n = size(C,2);
-% Hv = zeros(size(v));
-% bar = inv(X-A*X*A')';
-% sna = inv(E0-C*X*C')';
-% for i = 1:size(v,2)
-%     sig = reshape(v(:,i),m,n);
-%     w = A'*(C'*C)*A*sig*(C'*C) ...
-%         + t*bar*(sig-A*sig*A')'*bar ...
-%         - t*A'*bar*(sig-A*sig*A')'*bar*A ...
-%         + t*C'*sna*(C*sig*C')'*sna*C;
-%     Hv(:,i) = w(:);
-% end
 
 function hess = hess_mult_to_hess(hm,n)
 
