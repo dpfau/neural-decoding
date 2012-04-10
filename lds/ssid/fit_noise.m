@@ -58,42 +58,46 @@ function [f grad hess] = obj(X,E0,E1,A,C,t)
 
 X = reshape(X,size(A));
 [main_f main_grad main_hess] = main_obj(X,A,C,E1);
-[bar1_f bar1_grad bar1_hess] = barrier(X, @(x) x-A*x*A', @(x) -x+A'*x*A, 0);%barrier_1(X,A);
-[bar2_f bar2_grad bar2_hess] = barrier(X, @(x)  -C*x*C', @(x)    C'*x*C, E0);%barrier_2(X,C,E0);
+[bar1_f bar1_grad bar1_hess] = barrier(X, @(x) x-A*x*A', @(x) -x+A'*x*A, 0);
+[bar2_f bar2_grad bar2_hess] = barrier(X, @(x)  -C*x*C', @(x)    C'*x*C, E0);
 f    = main_f    + t*bar1_f    + t*bar2_f;
 grad = main_grad + t*bar1_grad + t*bar2_grad;
 hess = main_hess + t*bar1_hess + t*bar2_hess;
 
-% function [f grad hess] = obj_phase_1(x,E0,E1,A,C,t)
-% 
-% m = size(A,1);
-% n = size(C,1);
-% X = reshape(x(1:m^2),m,m);
-% S = reshape(x(m^2+1:2*m^2),m,m);
-% T = reshape(x(2*m^2+1:end),n,n);
-% [main_f main_grad main_hess] = main_obj(X,A,C,E1);
-% [bar1_f bar1_grad bar1_hess] = barrier_1_phase_1(X,S,A);
-% [bar2_f bar2_grad bar2_hess] = barrier_2_phase_1(X,T,C,E0);
-% f    = main_f + t*bar1_f + t*bar2_f;
-% grad = [main_grad, zeros(m,m+n); zeros(m+n,2*m+n)] ...
-%      + t*[bar1_grad, zeros(2*m,n); zeros(n,2*m+n)] ...
-%      + t*[];
-% hess =
+function [f grad hess] = obj_phase_1(x,E0,E1,A,C,t)
+
+m = size(A,1);
+n = size(C,1);
+X = reshape(x(1:m^2),m,m);
+S = reshape(x(m^2+1:2*m^2),m,m);
+T = reshape(x(2*m^2+1:end),n,n);
+[main_f main_grad main_hess] = main_obj(X,A,C,E1);
+[bar1_f bar1_grad bar1_hess] = barrier(X, @(x) x-A*x*A', @(x) -x+A'*x*A, S);
+[bar2_f bar2_grad bar2_hess] = barrier(X, @(x)  -C*x*C', @(x)    C'*x*C, E0+T);
+f       = main_f    + t*bar1_f    + t*bar2_f;
+grad_X  = main_grad + t*bar1_grad + t*bar2_grad;
+hess_XX = main_hess + t*bar1_hess + t*bar2_hess;
+
+[~,grad_S,hess_SS] = barrier(S, @(x) x, @(x) -x, X-A*X*A');
+[~,grad_T,hess_TT] = barrier(T, @(x) x, @(x) -x, E0-C*X*C');
+hess_SX = hess_mult_to_hess(@(x) inv(S+X-A*X*A')'*(x-A*x*A')'*inv(S+X-A*X*A')',size(A));
+hess_TX = hess_mult_to_hess(@(x) inv(T+E0-C*X*C')'*(-C*x*C')'*inv(T+E0-C*X*C')',size(C));
+
+grad = [grad_X(:); t*grad_S(:); t*grad_T(:)];
+hess = [hess_XX,   t*hess_SX',     t*hess_TX'; ...
+        t*hess_SX, t*hess_SS,      zeros(m^2,n^2); ...
+        t*hess_TX, zeros(n^2,m^2), t*hess_TT];
 
 function [f grad hess] = main_obj(X,A,C,E1)
 
 foo = E1-C*A*X*C';
 f = 0.5*norm(foo,'fro')^2;
 grad = -A'*C'*foo*C;
-hess = hess_mult_to_hess(@(x) main_hess_mult(A,C,x), numel(X));
+hess = hess_mult_to_hess(@(x) main_hess_mult(A,C,x), size(X));
 
-function Hv = main_hess_mult(A,C,v)
+function w = main_hess_mult(A,C,sig)
 
-m = size(A,2);
-n = size(C,2);
-sig = reshape(v,m,n);
 w = A'*(C'*C)*A*sig*(C'*C);
-Hv = w(:);
 
 function [f grad hess] = barrier(X,g,h,c)
 
@@ -101,33 +105,20 @@ foo = g(X)+c;
 bar = inv(foo)';
 f = -log(det(foo));
 grad = h(bar);
-hess = hess_mult_to_hess(@(x) hess_mult_barrier(g,h,bar,x,size(X,1)), numel(X));
+hess = hess_mult_to_hess(@(x) hess_mult_barrier(g,h,bar,x), size(X));
 
-function Hv = hess_mult_barrier(g,h,bar,v,m)
+function w = hess_mult_barrier(g,h,bar,sig)
 
-sig = reshape(v,m,m);
 w = -h(bar*g(sig)'*bar);
-Hv = w(:);
-
-% function [f grad hess] = barrier_1_phase_1(X,S,A)
-% 
-% foo = S+X-A*X*A';
-% f = -log(det(foo));
-% grad = [,;,eye(size(S,1))];
-% 
-% function [f grad hess] = barrier_2_phase_1(X,T,C,E0)
-% 
-% foo = T+E0-C*X*C';
-% f = -log(det(foo));
-% grad = [,;,eye(size(T,1))];
 
 function hess = hess_mult_to_hess(hm,n)
 
-hess = zeros(n);
-for i = 1:n
-    foo = zeros(n,1);
+hess = zeros(n(1)^2,n(2)^2);
+for i = 1:n(2)^2
+    foo = zeros(n(2),n(2));
     foo(i) = 1;
-    hess(:,i) = hm(foo);
+    bar = hm(foo);
+    hess(:,i) = bar(:);
 end
 
 function [x fx] = constrained_newton(f,x0,A,b,eps)
