@@ -58,11 +58,27 @@ function [f grad hess] = obj(X,E0,E1,A,C,t)
 
 X = reshape(X,size(A));
 [main_f main_grad main_hess] = main_obj(X,A,C,E1);
-[bar1_f bar1_grad bar1_hess] = obj_barrier_1(X,A);
-[bar2_f bar2_grad bar2_hess] = obj_barrier_2(X,C,E0);
-f = main_f + t*bar1_f + t*bar2_f;
+[bar1_f bar1_grad bar1_hess] = barrier_1(X,A);
+[bar2_f bar2_grad bar2_hess] = barrier_2(X,C,E0);
+f    = main_f    + t*bar1_f    + t*bar2_f;
 grad = main_grad + t*bar1_grad + t*bar2_grad;
 hess = main_hess + t*bar1_hess + t*bar2_hess;
+
+% function [f grad hess] = obj_phase_1(x,E0,E1,A,C,t)
+% 
+% m = size(A,1);
+% n = size(C,1);
+% X = reshape(x(1:m^2),m,m);
+% S = reshape(x(m^2+1:2*m^2),m,m);
+% T = reshape(x(2*m^2+1:end),n,n);
+% [main_f main_grad main_hess] = main_obj(X,A,C,E1);
+% [bar1_f bar1_grad bar1_hess] = barrier_1_phase_1(X,S,A);
+% [bar2_f bar2_grad bar2_hess] = barrier_2_phase_1(X,T,C,E0);
+% f    = main_f + t*bar1_f + t*bar2_f;
+% grad = [main_grad, zeros(m,m+n); zeros(m+n,2*m+n)] ...
+%      + t*[bar1_grad, zeros(2*m,n); zeros(n,2*m+n)] ...
+%      + t*[];
+% hess =
 
 function [f grad hess] = main_obj(X,A,C,E1)
 
@@ -79,7 +95,7 @@ sig = reshape(v,m,n);
 w = A'*(C'*C)*A*sig*(C'*C);
 Hv = w(:);
 
-function [f grad hess] = obj_barrier_1(X,A)
+function [f grad hess] = barrier_1(X,A)
 
 foo = X-A*X*A';
 f = -log(det(foo));
@@ -93,7 +109,7 @@ sig = reshape(v,m,m);
 w = foo*(sig-A*sig'*A')'*foo - A'*foo*(sig-A*sig*A')'*foo*A;
 Hv = w(:);
 
-function [f grad hess] = obj_barrier_2(X,C,E0)
+function [f grad hess] = barrier_2(X,C,E0)
 
 foo = E0-C*X*C';
 f = -log(det(foo));
@@ -106,6 +122,18 @@ m = size(C,2);
 sig = reshape(v,m,m);
 w = C'*foo*(C*sig*C')'*foo*C;
 Hv = w(:);
+
+% function [f grad hess] = barrier_1_phase_1(X,S,A)
+% 
+% foo = S+X-A*X*A';
+% f = -log(det(foo));
+% grad = [,;,eye(size(S,1))];
+% 
+% function [f grad hess] = barrier_2_phase_1(X,T,C,E0)
+% 
+% foo = T+E0-C*X*C';
+% f = -log(det(foo));
+% grad = [,;,eye(size(T,1))];
 
 function hess = hess_mult_to_hess(hm,n)
 
@@ -138,4 +166,25 @@ while abs(fx - fx_) > eps
         [fx,grad,hess] = f(x + a*dx);
     end
     x = x + a*dx;
+end
+
+function [dx dx_] = test_grad(f,x)
+
+[fx,dx,~] = f(x);
+dx_ = zeros(size(dx));
+for i = 1:numel(x);
+    x(i) = x(i) + 1e-8;
+    dx_(i) = (f(x)-fx)*1e8;
+    x(i) = x(i) - 1e-8;
+end
+
+function [H H_] = test_hess(f,x)
+
+[~,grad,H] = f(x);
+H_ = zeros(size(H));
+for i = 1:numel(x)
+    x(i) = x(i) + 1e-8;
+    [~,grad_,~] = f(x);
+    H_(:,i) = (grad_-grad)*1e8;
+    x(i) = x(i) - 1e-8;
 end
