@@ -31,28 +31,33 @@ E1 = e(:,2:end)*e(:,1:end-1)'/(size(e,2)-1);
 
 Q0 = randn(size(A));
 Q0 = Q0*Q0'; 
-S = Q0;
-for i = 1:1000 % Initialize at a feasible point
-    S = Q0 + A*S*A';
-end
-symm = zeros(size(S,1)*(size(S,1)-1)/2,numel(S));
+symm = zeros(size(Q0,1)*(size(Q0,1)-1)/2,numel(Q0));
 t = 0;
-for i = 1:size(S,1)
-    for j = i+1:size(S,1)
+for i = 1:size(Q0,1)
+    for j = i+1:size(Q0,1)
         t = t+1;
-        symm(t,sub2ind(size(S),i,j)) = 1;
-        symm(t,sub2ind(size(S),j,i)) = -1;
+        symm(t,sub2ind(size(Q0),i,j)) = 1;
+        symm(t,sub2ind(size(Q0),j,i)) = -1;
     end
 end
+S = eye(size(A,1))  + Q0 - A*Q0*A';
+T = eye(size(E0,1)) + E0 - C*Q0*C';
+st = numel(S)+numel(T);
+Sig = constrained_newton(@(x) obj_phase_1(x,E0,E1,A,C,t), ...
+                        [Q0(:);S(:);T(:)], ...
+                        [symm, zeros(size(symm,1),st); zeros(st,numel(Q0)), eye(st)], ...
+                        zeros(size(symm,1)+st,1), ...
+                        1e-8);
+                    
 %fprintf('Iter\tf(x)\tmax(imag(eig))\tmin(real(eig))\n');
 %fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(S(:),E0,E1,A,C,1),max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
 for t = 1
-    [S,fval] = constrained_newton(@(x) obj(x,E0,E1,A,C,1e10*2^-t), S(:), symm, zeros(size(symm,1),1), 1e-8);
+    [Sig,fval] = constrained_newton(@(x) obj(x,E0,E1,A,C,1e10*2^-t), Sig(:), symm, zeros(size(symm,1),1), 1e-8);
     %fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
 end
-S = reshape(S,size(A));
-Q = S-A*S*A';
-R = E0 - C*S*C';
+Sig = reshape(Sig,size(A));
+Q = Sig-A*Sig*A';
+R = E0 - C*Sig*C';
 
 function [f grad hess] = obj(X,E0,E1,A,C,t)
 
@@ -129,9 +134,9 @@ x = x0;
 fx_ = Inf;
 [fx,grad,hess] = f(x);
 t = 1;
-fprintf('Iter \t f(x) \t\tmin eig \n')
+fprintf('Iter \t f(x) \n')
 while abs(fx - fx_) > eps
-    fprintf('%2.4d \t %2.4d \t %2.4d \n',t,fx,min(eig(reshape(x,7,7))));
+    fprintf('%2.4d \t %2.4d \n',t,fx);
     t = t+1;
     foo = -[hess, A'; A, zeros(numel(b))]\[grad(:); A*x-b];
     dx = foo(1:length(x));
