@@ -98,23 +98,25 @@ Hv = w(:);
 function [f grad hess] = barrier_1(X,A)
 
 foo = X-A*X*A';
+bar = inv(foo)';
 f = -log(det(foo));
-grad = -inv(foo)'-A'*(foo'\A);
-hess = hess_mult_to_hess(@(x) hess_mult_barrier_1(A,foo,x), numel(X));
+grad = -bar+A'*bar*A;
+hess = hess_mult_to_hess(@(x) hess_mult_barrier_1(A,bar,x), numel(X));
 
 function Hv = hess_mult_barrier_1(A,foo,v)
 
 m = size(A,2);
 sig = reshape(v,m,m);
-w = foo*(sig-A*sig'*A')'*foo - A'*foo*(sig-A*sig*A')'*foo*A;
+w = foo*(sig-A*sig*A')'*foo - A'*foo*(sig-A*sig*A')'*foo*A;
 Hv = w(:);
 
 function [f grad hess] = barrier_2(X,C,E0)
 
 foo = E0-C*X*C';
+bar = inv(foo)';
 f = -log(det(foo));
-grad = C'*(foo'\C);
-hess = hess_mult_to_hess(@(x) hess_mult_barrier_2(C,foo,x), numel(X));
+grad = C'*bar*C;
+hess = hess_mult_to_hess(@(x) hess_mult_barrier_2(C,bar,x), numel(X));
 
 function Hv = hess_mult_barrier_2(C,foo,v)
     
@@ -185,6 +187,6 @@ H_ = zeros(size(H));
 for i = 1:numel(x)
     x(i) = x(i) + 1e-8;
     [~,grad_,~] = f(x);
-    H_(:,i) = (grad_-grad)*1e8;
+    H_(:,i) = (grad_(:)-grad(:))*1e8;
     x(i) = x(i) - 1e-8;
 end
