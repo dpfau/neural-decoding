@@ -22,7 +22,11 @@ if verbose
     t = 0;
     fprintf('Iter \t f(x) \t\t ||r|| \t\t ||Ax-b|| \n')
 end
+as = [];
 while norm(A*x-b) > eps || norm(r) > eps
+    if length(as) == 3 && min(as) < 1e-3 && as(1) == as(2) && as(1) == as(3)
+        break
+    end
     if verbose
         t = t+1;
         fprintf('%2.4d \t %2.4d \t %2.4d \t %2.4d \n',t,fx,norm(r),norm(A*x-b));
@@ -43,5 +47,10 @@ while norm(A*x-b) > eps || norm(r) > eps
     end
     x = x + a*dx;
     n = n + a*dn;
+    if length(as) < 3
+        as = [as a];
+    else
+        as = [as(2:3) a];
+    end
 end
 warning('on','MATLAB:nearlySingularMatrix')

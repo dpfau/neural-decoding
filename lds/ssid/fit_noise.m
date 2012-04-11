@@ -52,7 +52,7 @@ Sig = constrained_newton(@(x) obj_phase_1(x,E0,E,A,C,t0), ...
                     
 fprintf('Iter\tf(x)\t\tmax(imag(eig))\tmin(real(eig))\n');
 fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(S(:),E0,E,A,C,1),max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
-for t = 1:32
+for t = 1:50
     [Sig,fval] = constrained_newton(@(x) obj(x,E0,E,A,C,t0*2^-t), Sig(1:numel(Q0)), symm, zeros(size(symm,1),1), 1e-6);
     fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
 end
