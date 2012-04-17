@@ -30,7 +30,7 @@ for i = 1:k
     E{i} = e(:,1+i:end)*e(:,1:end-i)'/(size(e,2)-i);
 end
 
-Q0 = randn(size(A));
+Q0 = ones(size(A));%randn(size(A));
 symm = zeros(size(Q0,1)*(size(Q0,1)-1)/2,numel(Q0));
 t=0;
 for i = 1:size(Q0,1)
@@ -48,15 +48,18 @@ Sig = constrained_newton(@(x) obj_phase_1(x,E0,E,A,C,t0), ...
                         [Q0(:);S(:);T(:)], ...
                         [symm, zeros(size(symm,1),st); zeros(st,numel(Q0)), eye(st)], ...
                         zeros(size(symm,1)+st,1), ...
-                        1e-6);
+                        1e-6, ...
+                        'off', ...
+                        @(x) min(eig(E0 + reshape(x(2*numel(Q0)+1:end),size(T)) - C*reshape(x(1:numel(Q0)),size(Q0))*C')));
+Sig = reshape(Sig(1:numel(Q0)),size(Q0));
                     
-fprintf('Iter\tf(x)\t\tmax(imag(eig))\tmin(real(eig))\n');
-fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(S(:),E0,E,A,C,1),max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
+fprintf('Iter\tf(x)\t\tmin(real(eig))\n');
+fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(Sig,E0,E,A,C,1),min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))));
 for t = 1:50
-    [Sig,fval] = constrained_newton(@(x) obj(x,E0,E,A,C,t0*2^-t), Sig(1:numel(Q0)), symm, zeros(size(symm,1),1), 1e-6);
-    fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,max(imag(eig(reshape(S,size(A))))),min(real(eig(reshape(S,size(A))))));
+    [Sig,fval] = constrained_newton(@(x) obj(x,E0,E,A,C,t0*2^-t), Sig(:), symm, zeros(size(symm,1),1), 1e-6);
+    Sig = reshape(Sig,size(A));
+    fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))));
 end
-Sig = reshape(Sig,size(A));
 Q = Sig-A*Sig*A';
 R = E0 -C*Sig*C';
 

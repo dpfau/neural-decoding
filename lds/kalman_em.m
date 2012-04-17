@@ -1,5 +1,6 @@
 function [A C Q R z0 V0 B D] = kalman_em(y,n,tol,maxIter,varargin)
 %% Initialize variables
+warning('off','MATLAB:nearlySingularMatrix')
 args = {}; % the non-standard arguments to be passed to the Kalman smoother
 vn = {'A','C','Q','R','z0','V0'};
 for i = 1:2:length(varargin)
@@ -54,7 +55,7 @@ end
 y = y - mean(y,2)*ones(1,T);
 ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
-ll = sum(lls);
+ll = sum(lls)
 i = 0;
 while abs( ll - ll0 ) > tol && i < maxIter
     i = i+1;
@@ -92,3 +93,4 @@ while abs( ll - ll0 ) > tol && i < maxIter
     [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
     ll = sum(lls);
 end
+warning('on','MATLAB:nearlySingularMatrix')
