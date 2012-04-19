@@ -15,7 +15,7 @@ if nargin < 7
 end
 assert( size(A,1) == size(b,1), 'A and b must have same number of rows' );
 assert( size(b,2) == 1, 'b must be vector' );
-alpha = 0.4; % alpha \in (0,1/2)
+alpha = 0.1; % alpha \in (0,1/2)
 beta  = 0.8; % beta  \in (0,1)
 n = zeros(numel(b),1); % dual variable
 
@@ -29,9 +29,9 @@ if verbose
 end
 as = [];
 while norm(A*x-b) > eps || norm(r) > eps
-    if length(as) == 3 && min(as) < 1e-3 && as(1) == as(2) && as(1) == as(3)
-        break
-    end
+    %if length(as) == 3 && min(as) < 1e-3 && as(1) == as(2) && as(1) == as(3)
+    %    break
+    %end
     if verbose
         t = t+1;
         fprintf('%2.4d \t %2.4d \t %2.4d \t %2.4d \t %2.4d \n',t,fx,norm(r),norm(A*x-b),det(test(x)));
