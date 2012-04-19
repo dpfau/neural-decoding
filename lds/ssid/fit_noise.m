@@ -45,6 +45,7 @@ for i = 1:size(Sig,1)
     end
 end
                     
+t0 = main_obj(Sig,A,C,E);
 fprintf('Iter\tf(x)\t\tmin(real(eig))\n');
 fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(Sig,E0,E,A,C,1),min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))));
 for t = 1:50

@@ -29,9 +29,9 @@ if verbose
 end
 as = [];
 while norm(A*x-b) > eps || norm(r) > eps
-    %if length(as) == 3 && min(as) < 1e-3 && as(1) == as(2) && as(1) == as(3)
-    %    break
-    %end
+    if length(as) == 3 && min(as) < 1e-3 && as(1) == as(2) && as(1) == as(3)
+       break
+    end
     if verbose
         t = t+1;
         fprintf('%2.4d \t %2.4d \t %2.4d \t %2.4d \t %2.4d \n',t,fx,norm(r),norm(A*x-b),det(test(x)));
