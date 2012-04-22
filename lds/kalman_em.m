@@ -20,7 +20,7 @@ m = size(y,1);
 T = size(y,2);
 
 nrow = [n, m, n, m, n, n];
-ncol = [n, n, n, m, 1, n];
+ncol = [n, n, n, 1, 1, n];
 pd = [0,0,1,1,0,0];
 for i = 1:6
     if ~exist(vn{i})
@@ -53,20 +53,23 @@ end
 
 %% EM loop
 y = y - mean(y,2)*ones(1,T);
+u = u - mean(u,2)*ones(1,T);
 ll0 = -Inf;
-[z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
-ll = sum(lls)
+[z V lls VV] = kalman_smoother(y,A,C,Q,diag(R),z0,V0,args{:});
+ll = sum(lls);
 i = 0;
+fprintf('Iter\tData LL\n');
 while abs( ll - ll0 ) > tol && i < maxIter
-    i = i+1;
-    fprintf('Iter %i: Data log likelihood - %d\n',i,ll);
-    z0 = z(:,1);
-    z1 = z(:,1)-mean(z(:,1));
-    V0 = V(:,:,1) + z1*z1';
-
     Ptt1  = sum(VV(:,:,2:end),3) + z(:,2:end)*z(:,1:end-1)';
     Pt1t1 = sum(V(:,:,1:end-1),3) + z(:,1:end-1)*z(:,1:end-1)';
     Ptt   = sum(V(:,:,2:end),3) + z(:,2:end)*z(:,2:end)';
+    
+    z0 = z(:,1);
+    z1 = z(:,1)-mean(z(:,1));
+    V0 = V(:,:,1) + z1*z1';
+    
+    i = i+1;
+    fprintf('%2.4d\t%2.4d\n',i,ll);
     if ~exist('B','var')
         A = Ptt1/Pt1t1;
         Q = 1/(T-1)*(Ptt - A*Ptt1');
@@ -75,22 +78,23 @@ while abs( ll - ll0 ) > tol && i < maxIter
         AB = [Ptt1, z2*u2']*[Pt1t1, z1*u2'; u2*z1', u2*u2']^-1;
         A = AB(:,1:n);
         B = AB(:,n+1:end);
+        args{find(cellfun(@(x) strcmp(x,'B'),args),1)+1} = B;
         Q = 1/(T-1)*(Ptt - A*Ptt1' - B*u2*z2');
         Q = diag(diag(Q)); % as the model is nonidentifiable, might as well force Q to be diagonal (following Zoubin)
     end
     
     if ~exist('D','var')
         C = (y*z')*(sum(V,3) + z*z')^-1;
-        R = 1/T*(y*y' - C*z*y');
+        R = diag(1/T*(y*y' - C*z*y'));
     else
         Pinv = (sum(V,3) + z*z')^-1;
         D = (y*u' - y*z'*Pinv*z*u')*(u*u' - u*z'*Pinv*z*u')^-1;
+        args{find(cellfun(@(x) strcmp(x,'D'),args),1)+1} = D;
         C = (y*z' - D*u*z')*Pinv;
-        R = 1/T*(y*y' - C*z*y' - D*u*y');
-        R = diag(diag(R));
-    end    
+        R = diag(1/T*(y*y' - C*z*y' - D*u*y'));
+    end
     ll0 = ll;
-    [z V lls VV] = kalman_smoother(y,A,C,Q,R,z0,V0,args{:});
+    [z V lls VV] = kalman_smoother(y,A,C,Q,diag(R),z0,V0,args{:});
     ll = sum(lls);
 end
 warning('on','MATLAB:nearlySingularMatrix')

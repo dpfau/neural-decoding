@@ -25,7 +25,9 @@ function [Q R] = fit_noise(e, A, C, k)
 % David Pfau, 2012
 
 YALMIPPATH = '/Users/davidpfau/Documents/MATLAB/yalmip'; % change for other systems
+SDPTPATH = '/Users/davidpfau/Documents/MATLAB/SDPT3-4.0';
 addpath(genpath(YALMIPPATH));
+addpath(genpath(SDPTPATH));
 E0 = e*e'/size(e,2);
 E = cell(k,1);
 for i = 1:k
@@ -46,12 +48,12 @@ for i = 1:size(Sig,1)
 end
                     
 t0 = main_obj(Sig,A,C,E);
-fprintf('Iter\tf(x)\t\tmin(real(eig))\n');
-fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(Sig,E0,E,A,C,1),min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))));
-for t = 1:50
+fprintf('Iter\tf(x)\t\tmin(eig(S))\tm(e(S-A*S*A''))\tm(e(E0-C*S*C''))\tNo barrier\n');
+fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',0,obj(Sig,E0,E,A,C,1),min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))),main_obj(Sig,A,C,E));
+for t = 1:25
     [Sig,fval] = constrained_newton(@(x) obj(x,E0,E,A,C,t0*2^-t), Sig(:), symm, zeros(size(symm,1),1), 1e-6);
     Sig = reshape(Sig,size(A));
-    fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))));
+    fprintf('%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\t%2.4d\n',t,fval,min(real(eig(Sig))),min(real(eig(Sig-A*Sig*A'))),min(real(eig(E0-C*Sig*C'))),main_obj(Sig,A,C,E));
 end
 Q = Sig-A*Sig*A';
 R = E0 -C*Sig*C';
