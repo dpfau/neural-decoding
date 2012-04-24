@@ -1,4 +1,4 @@
-function [Q R] = fit_noise(e, A, C, k)
+function [Q R] = fit_noise(e, A, C, k, YALMIPPATH, SDPTPATH)
 % Estimate the noise covariances for the linear dynamical system:
 % x(t+1) = A*x(t) + B*u(t) + v(t)
 % y(t)   = C*x(t) + D*u(t) + w(t)
@@ -24,8 +24,8 @@ function [Q R] = fit_noise(e, A, C, k)
 %
 % David Pfau, 2012
 
-YALMIPPATH = '/Users/davidpfau/Documents/MATLAB/yalmip'; % change for other systems
-SDPTPATH = '/Users/davidpfau/Documents/MATLAB/SDPT3-4.0';
+if nargin < 5, YALMIPPATH = '/Users/davidpfau/Documents/MATLAB/yalmip'; end
+if nargin < 6, SDPTPATH = '/Users/davidpfau/Documents/MATLAB/SDPT3-4.0'; end
 addpath(genpath(YALMIPPATH));
 addpath(genpath(SDPTPATH));
 E0 = e*e'/size(e,2);
