@@ -21,7 +21,7 @@ T = size(y,2);
 
 nrow = [n, m, n, m, n, n];
 ncol = [n, n, n, 1, 1, n];
-pd = [0,0,1,1,0,0];
+pd = [0,0,1,0,0,0];
 for i = 1:6
     if ~exist(vn{i})
         eval([vn{i} ' = randn(nrow(i),ncol(i));']);
@@ -53,7 +53,9 @@ end
 
 %% EM loop
 y = y - mean(y,2)*ones(1,T);
-u = u - mean(u,2)*ones(1,T);
+if exist('u','var')
+    u = u - mean(u,2)*ones(1,T);
+end
 ll0 = -Inf;
 [z V lls VV] = kalman_smoother(y,A,C,Q,diag(R),z0,V0,args{:});
 ll = sum(lls);
