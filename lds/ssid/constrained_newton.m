@@ -44,14 +44,24 @@ while norm(A*x-b) > eps || norm(r) > eps
     
     a = 1;
     [fx,grad,hess] = f(x + a*dx);
-    r = [grad(:)+A'*(n + a*dn); A*(x + a*dx)-b];
+    if isempty(dn) % If there are no equality constraints
+        r = grad(:);
+    else
+        r = [grad(:)+A'*(n + a*dn); A*(x + a*dx)-b];
+    end
     while imag(fx) ~= 0 || test(x + a*dx) < 0 || norm(r) > (1-a*alpha)*norm(r_) % crossed the boundary
         a = a*beta;
         [fx,grad,hess] = f(x + a*dx);
-        r = [grad(:)+A'*(n + a*dn); A*(x + a*dx)-b];
+        if isempty(dn)
+            r = grad(:);
+        else
+            r = [grad(:)+A'*(n + a*dn); A*(x + a*dx)-b];
+        end
     end
     x = x + a*dx;
-    n = n + a*dn;
+    if ~isempty(n)
+        n = n + a*dn;
+    end
     if length(as) < 3
         as = [as a];
     else
