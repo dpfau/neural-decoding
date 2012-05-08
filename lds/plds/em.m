@@ -4,7 +4,7 @@ function params = em( data, eps, k, maxIter, init )
 
 addpath ../../util
 addpath /Users/davidpfau/Documents/MATLAB/tprod
-if nargin == 4
+if nargin < 5
     [params map] = rand_init( k, size(data,1), size(data,2) ); % initial estimate for phase path and parameters
 else
     map = init.map;
@@ -15,11 +15,13 @@ end
 fe = Inf;
 fe_ = exp_comp_log_lik( data, map, prec, params ) + entropy( prec );
 i = 0;
+fprintf('Iter \t Data LL \t FE \t\t\t\t ECLL \t\t Latent LL\n')
 while i < maxIter && ( i < 10 || fe - fe_ > eps )
     i = i+1;
     fe = fe_;
-    [map,cll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8 ); % Initialize with path from previous step
+    [map,cll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8, 1 ); % Initialize with path from previous step
     fe1 = exp_comp_log_lik( data, map, prec, params ) + entropy( prec );
     [params,ecll,fe_] = m_step( data, map, prec, params );
-    fprintf('Iter: %4i\tFE: %2.4d -> %2.4d\tECLL: %2.4d\tLatent LL: %2.4d\n',i,fe1,fe_,ecll,cll);
+    dat_ll = data_log_lik( data, map, prec, params );
+    fprintf('%4i \t %2.4d \t %2.4d -> %2.4d \t %2.4d \t %2.4d\n',i,dat_ll,fe1,fe_,ecll,cll);
 end

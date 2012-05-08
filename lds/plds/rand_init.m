@@ -13,5 +13,5 @@ Q = Q*Q';
 b = 0.1*randn(N,1);
 f = @(x,y) exp(x);
 
-params = struct('A',A,'C',C,'Q',Q,'b',b,'f',f);
-[data,map] = gen( params, T, zeros(k,1) );
+params = struct('A',A,'C',C,'Q',Q,'b',b,'f',f,'x0',zeros(k,1),'Q0',Q);
+[data,map] = gen( params, T );

@@ -18,6 +18,8 @@ function [params ecll fe] = m_step( data, map, prec, params )
 T = size(map,2);
 k = size(map,1);
 covar = inv_block_tridiag( prec );
+params.x0 = map(:,1);
+params.Q0 = covar.diag(:,:,1) + map(:,1)*map(:,1)';
 aug_covar = [ covar.diag, zeros(k,1,T); zeros(1,k+1,T) ]; % Augment covariance with zeros for bias term
 
 Ptt1  = (sum(covar.off_diag,3) + map(:,1:end-1)*map(:,2:end)')';
@@ -28,7 +30,9 @@ params.A = Ptt1/Pt1t1;
 params.Q = (Ptt - params.A*Ptt1')/(T-1); % This part is nearly identical to the standard LDS case
 
 opts = optimset('GradObj','on','Display','off');
+warning('off','MATLAB:nearlySingularMatrix')
 [Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
+warning('on','MATLAB:nearlySingularMatrix')
 
 params.C = Cb(:,1:end-1);
 params.b = Cb(:,end);

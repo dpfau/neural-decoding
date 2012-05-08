@@ -14,7 +14,7 @@ Q = cQ*cQ';
 Cb = newtons_method( @(x) C_likelihood( data, map, x ), zeros( size(data,1), k+1 ), 1e-8 );
 f = @(x,y) exp(x);
 
-params = struct('A',A,'C',Cb(:,1:k),'Q',Q,'b',Cb(:,end),'f',f);
+params = struct('A',A,'C',Cb(:,1:k),'Q',Q,'b',Cb(:,end),'f',f,'x0',zeros(k,1),'Q0',Q);
 
 function [fx,grad,H] = C_likelihood( data, map, Cb )
 

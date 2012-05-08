@@ -1,9 +1,9 @@
-function [y x] = gen( params, len, x0 )
+function [y x] = gen( params, len )
 
 x = zeros( size( params.A, 1 ), len );
 
-xt = x0;
-R = chol(params.Q);
+xt = params.x0 + chol(params.Q0)'*randn(size(x0));
+R = chol(params.Q)';
 for i = 1:len
     x(:,i) = xt;
     xt = params.A*xt + R*randn(size(R,2),1);
