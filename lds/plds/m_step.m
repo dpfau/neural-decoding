@@ -1,4 +1,4 @@
-function [params ecll fe] = m_step( data, map, prec, params )
+function params = m_step( data, map, prec, params )
 % Recovers maximum expected complete likelihood parameters of Poisson-LDS
 % model given data, the MAP path over time and the Hessian of the complete 
 % log likelihood, which is the precision matrix of the best Gaussian 
@@ -37,11 +37,11 @@ warning('on','MATLAB:nearlySingularMatrix')
 params.C = Cb(:,1:end-1);
 params.b = Cb(:,end);
 
-ecll = dat_ll + (size(map,2)-1)/2*log(det(params.Q)) + 1/2*log(det(params.Q0)) ...
-     + 1/2*( trace( params.Q\Ptt - 2*(params.Q\params.A*Ptt1') + params.A'*(params.Q\params.A*Pt1t1) ) ) ...
-     + 1/2*( size(params.Q0,1) - params.x0'*(params.Q0\params.x0) ) ...
-     + sum( sum( gammaln( data + 1 ) ) ) + numel(map)/2*log(2*pi); % Last line is constant terms of log normalizers
-fe = ecll + entropy( prec ); 
+% ecll = dat_ll + (size(map,2)-1)/2*log(det(params.Q)) + 1/2*log(det(params.Q0)) ...
+%      + 1/2*( trace( params.Q\Ptt - 2*(params.Q\params.A*Ptt1') + params.A'*(params.Q\params.A*Pt1t1) ) ) ...
+%      + 1/2*( size(params.Q0,1) - params.x0'*(params.Q0\params.x0) ) ...
+%      + sum( sum( gammaln( data + 1 ) ) ) + numel(map)/2*log(2*pi); % Last line is constant terms of log normalizers
+% fe = ecll + entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
 

@@ -19,5 +19,5 @@ if isfield(x,'diag')
         z = foo;
     end
 else
-    y = 2*sum(log(diag(chol(sparse_hess(x)))));
+    y = 2*sum(log(diag(cholreg(sparse_hess(x),5e-3))));
 end
