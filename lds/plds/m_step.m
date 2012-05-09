@@ -28,6 +28,7 @@ Ptt   = sum(covar.diag(:,:,2:end),3) + map(:,2:end)*map(:,2:end)';
 
 params.A = Ptt1/Pt1t1;
 params.Q = (Ptt - params.A*Ptt1')/(T-1); % This part is nearly identical to the standard LDS case
+params.Q = 1/2*(params.Q + params.Q'); % Enforce symmetry.
 
 opts = optimset('GradObj','on','Display','off');
 warning('off','MATLAB:nearlySingularMatrix')
