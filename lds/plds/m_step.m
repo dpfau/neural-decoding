@@ -32,17 +32,11 @@ params.Q = 1/2*(params.Q + params.Q'); % Enforce symmetry.
 
 opts = optimset('GradObj','on','Display','off');
 warning('off','MATLAB:nearlySingularMatrix')
-[Cb dat_ll] = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
+Cb = fminunc( @(x) data_ll( x, data, [map; ones(1,size(map,2))], aug_covar ), [params.C, params.b], opts ); % Also augment mean with row of ones for bias term, and estimate C and b simultaneously by numerical optimization
 warning('on','MATLAB:nearlySingularMatrix')
 
 params.C = Cb(:,1:end-1);
 params.b = Cb(:,end);
-
-% ecll = dat_ll + (size(map,2)-1)/2*log(det(params.Q)) + 1/2*log(det(params.Q0)) ...
-%      + 1/2*( trace( params.Q\Ptt - 2*(params.Q\params.A*Ptt1') + params.A'*(params.Q\params.A*Pt1t1) ) ) ...
-%      + 1/2*( size(params.Q0,1) - params.x0'*(params.Q0\params.x0) ) ...
-%      + sum( sum( gammaln( data + 1 ) ) ) + numel(map)/2*log(2*pi); % Last line is constant terms of log normalizers
-% fe = ecll + entropy( prec ); 
 
 function [f grad] = data_ll( C, data, map, covar )
 
