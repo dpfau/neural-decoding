@@ -1,7 +1,10 @@
-function [map params] = make_init( data, k )
+function [map params] = make_init( data, k, t )
 % For now, a random initialization of a Poisson-LDS model.  Definitely
 % should implement more justified initialization later
 
+if nargin < 3
+    t = 0;
+end
 A = 0.9*eye(k);
 
 cQ = 0.1*eye(k);
@@ -14,7 +17,7 @@ Q = cQ*cQ';
 Cb = newtons_method( @(x) C_likelihood( data, map, x ), zeros( size(data,1), k+1 ), 1e-8 );
 f = @(x,y) exp(x);
 
-params = struct('A',A,'C',Cb(:,1:k),'Q',Q,'b',Cb(:,end),'f',f,'x0',zeros(k,1),'Q0',Q);
+params = struct('A',A,'C',Cb(:,1:k),'Q',Q,'b',Cb(:,end),'f',f,'x0',zeros(k,1),'Q0',Q,'D',zeros(size(data,1),size(data,1)*t),'t',t);
 
 function [fx,grad,H] = C_likelihood( data, map, Cb )
 

@@ -1,7 +1,11 @@
 function y = block_hankel( x, i, s, n )
 
 k = size(x,1);
-assert( size(x,2) >= n );
+if nargin < 4
+    n = size(x,2);
+else
+    assert( size(x,2) >= n );
+end
 y = zeros(s*k, n-s+1);
 
 for t = 0:(s-1)
