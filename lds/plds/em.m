@@ -16,9 +16,9 @@ dat_ll_ = Inf;
 dat_ll  = data_log_lik( data, map, prec, params );
 i = 0;
 fprintf('Iter \t Data LL \t Latent LL\n')
-while i < maxIter && ( i < 10 || dat_ll - dat_ll_ > eps )
+while i < maxIter && ( i < 10 || dat_ll - dat_ll_ < eps )
     i = i+1;
-    [map,cll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8, 1 ); % Initialize with path from previous step
+    [map,cll,prec] = newtons_method(@(x) log_lik( data, x, params ), map, 1e-8 ); % Initialize with path from previous step
     params = m_step( data, map, prec, params );
     dat_ll_ = dat_ll;
     dat_ll  = data_log_lik( data, map, prec, params );
