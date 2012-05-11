@@ -46,8 +46,10 @@ params.C = CbD(:,1:k);
 params.b = CbD(:,k+1);
 params.D = CbD(:,k+2:end);
 
-function [f grad] = data_ll( C, data, map, covar, dim )
+function [f grad Hinfo] = data_ll( C, data, map, covar, dim )
 
+x = size(C,1);
+y = size(C,2);
 Cmu = C*map;
 sigCt = tprod( covar, [1 -1 3], C(:,1:dim), [2 -1] );
 CsigCt = tprod( sigCt, [-1 1 2], C(:,1:dim), [1 -1] );
@@ -55,15 +57,25 @@ fCx = exp( Cmu + 1/2*CsigCt );
 
 f = sum( sum( fCx - data.*Cmu ) );
 grad = fCx*map' ...
-     + [tprod( fCx, [1 -1], sigCt, [2 1 -1] ), zeros(size(data,1),size(C,2)-dim)] ...
+     + [tprod( fCx, [1 -1], sigCt, [2 1 -1] ), zeros(x,y-dim)] ...
      - data*map';
+% mapSigCt = tprod(map,[1 3],ones(size(sigCt,2),1),2)+cat(1,sigCt,zeros(size(map,1)-size(sigCt,1),size(sigCt,2),size(sigCt,3)));
+% H =  tprod( fCx, [1 -1], covar, [2 3 -1] ) + tprod( fCx, [1 -1], tprod(mapSigCt,[1 2 4],mapSigCt,[1 3 4]), [1 2 3 -1] );
+H1 =  tprod( fCx, [1 -1], covar, [2 3 -1] ) ...
+    + tprod( fCx, [1 -1], tprod( map(1:dim,:), [1 4], sigCt, [2 3 4] ) ...
+                        + tprod( sigCt, [1 3 4], map(1:dim,:), [2 4] ) ...
+                        + tprod( sigCt, [1 3 4], sigCt, [2 3 4] ), [2 3 1 -1] );
+H2 = cat(3,cat(2,H1,zeros(x,y-dim,dim)),zeros(x,y,y-dim)) ...
+   + tprod( fCx, [1 -1], tprod( map, [1 3], map, [2 3]), [2 3 -1] );
+Hinfo = struct('all',H2);
 
 function test_data_ll( C, data, map, covar, dim )
-        
+
 [fx,grad] = data_ll( C, data, map, covar, dim );
 for i = 1:numel(C)
-    C(i) = C(i) + 1e-8;
+    C(i) = C(i) + 1e-5;
     fx_ = data_ll( C, data, map, covar, dim );
-    fprintf('Exact gradient: %d, Approximate gradient: %d\n',grad(i),(fx_-fx)*1e8);
-    C(i) = C(i) - 1e-8;
+    grad_ = (fx_-fx)*1e5;
+    fprintf('Exact: %d, Approx: %d, Ratio: %d\n',grad(i),grad_,(grad(i)-grad_)/grad(i));
+    C(i) = C(i) - 1e-5;
 end   
