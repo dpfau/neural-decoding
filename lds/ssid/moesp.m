@@ -39,7 +39,7 @@ m = size( u, 1 );
 opts = default_opts( opts );
 
 %% Reconstruct A, C
-[Oi yh] = build_proj( y, u, i, opts );
+[Oi yh] = build_proj( y, u, i, N, opts );
 [r,s,~] = svd( Oi );
 n = find( diag( s )/s(1) < opts.tol, 1 ) - 1; % approximate order of the system
 if isempty( n )

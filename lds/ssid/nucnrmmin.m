@@ -26,6 +26,15 @@ switch opts.noise
             hankel_op( Un, l, i, N, y(:,1:N), 1 ), ...
             tfocs_opts );
         Oi = hankel_op( Un, l, i, N, yh, 1 );
+    case 'yalmip' % Uses YALMIP instead of TFOCS to do the Gaussian case
+        addpath /Users/davidpfau/Documents/MATLAB/yalmip
+        addpath /Users/davidpfau/Documents/MATLAB/SDPT3-4.0
+        s0 = svd(Y*Un);
+        Yh = sdpvar(l,N);
+        A = block_hankel_mat(size(Yh),[i,N-i+1]);
+        YUn = reshape(A*Yh(:),i*l,N-i+1)*Un;
+        solvesdp([],norm(YUn,'nuclear') + s0(1)/l/N/opts.vsig^2*norm(Yh-y(:,1:N),'fro'));
+        yh = double(Yh);
     case 'poiss'
         % For Poisson noise, use ADMM to optimize jointly over nuclear
         % norm and Poisson likelihood
