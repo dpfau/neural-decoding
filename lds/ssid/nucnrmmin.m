@@ -26,22 +26,33 @@ switch opts.noise
             hankel_op( Un, l, i, N, y(:,1:N), 1 ), ...
             tfocs_opts );
         Oi = hankel_op( Un, l, i, N, yh, 1 );
-%     case 'yalmip' % Uses YALMIP instead of TFOCS to do the Gaussian case
-%         addpath(genpath('/Users/davidpfau/Documents/MATLAB/yalmip'))
-%         addpath(genpath('/Users/davidpfau/Documents/MATLAB/SDPT3-4.0'))
-%         s0 = svd(Y*Un);
-%         Yh = sdpvar(l,N);
-%         A = block_hankel_right_mult_mat(l,i,N,Un);
-%         YUn = reshape(A*Yh(:),i*l,N-i+1);
-%         solvesdp([],norm(YUn,'nuclear') + s0(1)/l/N/opts.vsig^2*norm(Yh-y(:,1:N),'fro'));
-%         yh = double(Yh);
+    case 'gauss2'
+        addpath( opts.tfocs_path )
+        s0 = svd(Y*Un);
+        tfocs_opts = tfocs;
+        tfocs_opts.tol = 1e-6;
+        tfocs_opts.printEvery = 10;
+        mu = 2*s0(1)/l/N/opts.vsig^2;
+%         yh = tfocs_SCD( @(x,t) prox_quad( mu, -mu*y(:,1:N), mu/2*sum(sum(y(:,1:N).^2)), x, t ), ...
+%             @(varargin) hankel_op( Un, l, i, N, varargin{:} ), ...
+%             @proj_spectral, ...
+%             0, ...
+%             [], ...
+%             hankel_op( Un, l, i, N, y(:,1:N), 1 ), ...
+%             tfocs_opts );
+        yh = tfocs( smooth_quad, ...
+                   { linop_scale(sqrt(mu)), -sqrt(mu)*y(:,1:N) },...
+                   @(varargin) proj_nuclear_hankel( Un, l, i, N, varargin{:} ), ...
+                   y(:,1:N), tfocs_opts);
+        Oi = hankel_op( Un, l, i, N, yh, 1 );
     case 'poiss'
         addpath( opts.tfocs_path )
         s0 = svd(Y*Un);
         tfocs_opts = tfocs_SCD;
         tfocs_opts.tol = 1e-4;
         tfocs_opts.maxIts = 1e3;
-        tfocs_opts.printEvery = 0;        
+        tfocs_opts.printEvery = 0;
+        yh = tfocs_SCD( [], [], @proj_spectral, [], y(:,1:N), hankel_op( Un, l, i, N, y(:,1:N), 1 ), tfocs_opts );
     case 'poiss_admm'
         % For Poisson noise, use ADMM to optimize jointly over nuclear
         % norm and Poisson likelihood
