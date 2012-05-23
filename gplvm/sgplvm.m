@@ -13,7 +13,28 @@ b = 1;
 c = 1;
 [~,~,z] = svd(y);
 z = z(:,1:d)';
-test_grad(y,struct('a',a,'b',b,'c',c,'z',z,'w',w));
+params = struct('a',a,'b',b,'c',c,'z',z,'w',w);
+test_grad(y,params);
+% wy = diag(w)*y;
+% K = kernel(z,a,b,c);
+% Ki = K^-1;
+% dK = -(Ki*wy')*(wy*Ki)/2 + D*Ki/2;
+% f = D*sum(log(diag(chol(K)))) ...
+%      + 1/2*sum(diag(wy*Ki*wy'));
+% dK_ = zeros(size(dK));
+% for i = 1:size(K,1)
+%     for j = 1:size(K,2)
+%         K(i,j) = K(i,j) + 1e-5;
+%         Ki = K^-1;
+%         f_ = D/2*log(det(K)) ...
+%             + 1/2*sum(diag(wy*Ki*wy'));
+%         dK_(i,j) = (f_-f)/1e-5;
+%         K(i,j) = K(i,j) - 1e-5;
+%     end
+% end
+disp('done');
+        
+%test_grad(y,struct('a',a,'b',b,'c',c,'z',z,'w',w));
 
 function [fy grad] = sgplvm_obj(y,params)
 % Computes the objective as well as gradient wrt z,a,b,c,w of the objective
@@ -26,18 +47,18 @@ N = size(y,2);
 [K d e] = kernel(z,a,b,c);
 wy = diag(w)*y;
 Ki = K^-1; % This is the biggest impediment to scaling
-fy = D*sum(diag(chol(K))) ...
+fy = D*sum(log(diag(chol(K)))) ...
      + 1/2*sum(diag(wy*Ki*wy')) ...
      + 1/2*z(:)'*z(:) ...
      + log(a) + log(b) + log(c) ...
      - N*sum(log(w));
-dK = (Ki*wy')*(wy*Ki) - D*Ki;
+dK = (-(Ki*wy')*(wy*Ki) + D*Ki)/2;
 dz = -c*(tprod(K,[2 3],z,[1 2])-tprod(K,[2 3],z,[1 3]));
-grad = struct( 'z', tprod(dK,[2 -1],dz,[1 2 -1]) + z, ...
+grad = struct( 'z', 2*tprod(dK,[2 -1],dz,[1 2 -1]) + z, ...
                'a', trace(dK*e) + 1/a, ...
                'b', trace(-dK/b^2) + 1/b, ...
                'c', trace(-1/2*dK*(d.*K)) + 1/c, ...
-               'w', w.*diag(y*Ki*y')'-N*sum(1./w) );
+               'w', w.*diag(y*Ki*y')'-N./w );
            
 function test_grad(y,params)
 
