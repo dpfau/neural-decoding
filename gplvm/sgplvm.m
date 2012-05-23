@@ -15,26 +15,6 @@ c = 1;
 z = z(:,1:d)';
 params = struct('a',a,'b',b,'c',c,'z',z,'w',w);
 test_grad(y,params);
-% wy = diag(w)*y;
-% K = kernel(z,a,b,c);
-% Ki = K^-1;
-% dK = -(Ki*wy')*(wy*Ki)/2 + D*Ki/2;
-% f = D*sum(log(diag(chol(K)))) ...
-%      + 1/2*sum(diag(wy*Ki*wy'));
-% dK_ = zeros(size(dK));
-% for i = 1:size(K,1)
-%     for j = 1:size(K,2)
-%         K(i,j) = K(i,j) + 1e-5;
-%         Ki = K^-1;
-%         f_ = D/2*log(det(K)) ...
-%             + 1/2*sum(diag(wy*Ki*wy'));
-%         dK_(i,j) = (f_-f)/1e-5;
-%         K(i,j) = K(i,j) - 1e-5;
-%     end
-% end
-disp('done');
-        
-%test_grad(y,struct('a',a,'b',b,'c',c,'z',z,'w',w));
 
 function [fy grad] = sgplvm_obj(y,params)
 % Computes the objective as well as gradient wrt z,a,b,c,w of the objective
