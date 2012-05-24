@@ -39,12 +39,27 @@ while norm(grad) > tol && k < iter
     a1 = 1;
     a_ = 100;
     p = -r;
+    dfy = grad'*p;
     fy0 = fy;
     i = 1;
     while 1
         [fy1 grad1] = obj.f(y+a1*p);
-        if fy1 > fy + c1*a1*grad'*p || ( fy1 >= fy0 && i > 1 )
-            a = zoom(a0,a1); % Need to define this!
+        if fy1 > fy + c1*a1*dfy || ( fy1 >= fy0 && i > 1 )
+            while 1
+                a = interpolate; % Need to define this!
+                [fy_ grad_] = obj.f(y+a*p);
+                dfy_ = grad_'*p;
+                if fy_ > fy + c1*a*dfy || fy_ >= fy0
+                    a1 = a;
+                else
+                    if abs(dfy_) <= -c2*dfy
+                        break
+                    elseif dfy_*(a1-a0) >= 0
+                        a1 = a0;
+                    end
+                    a0 = a;    
+                end
+            end
             break
         end
         if abs(grad1'*p) <= -c2*grad'*p
@@ -52,7 +67,7 @@ while norm(grad) > tol && k < iter
             break
         end
         if grad1'*p >= 0
-            a = zoom(a0,a1);
+            a = zoom(a0,a1,obj,y,p,c1,c2);
             break
         end
         a0 = a1;
