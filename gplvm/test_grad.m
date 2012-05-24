@@ -1,7 +1,5 @@
-z = randn(5,20);
-a = 1;
-b = 2;
-c = 3;
-
-K = kernel(z,a,b,c);
-f = log(det(K));
+y = randn(10,20);
+d = 5;
+params = rand(113,1);
+sgplvm = ScaledGPLVM(y,d);
+sgplvm.test_grad(params);

@@ -14,6 +14,8 @@ classdef ScaledGPLVM
         b = 1;
         c = 1;
         z = 1;
+        A = sparse([eye(4), zeros(4,1)]); % Inequality constraints, A*params > p
+        p = zeros(4,1);
     end
     methods
         function sgplvm = ScaledGPLVM(y,d)
@@ -22,21 +24,24 @@ classdef ScaledGPLVM
             sgplvm.N = size(y,2);
             sgplvm.mu = mean(y,2);
             sgplvm.y = y-sgplvm.mu(:,ones(1,sgplvm.N));
-            sgplvm.w = ones(1,sgplvm.D);
+            sgplvm.w = ones(sgplvm.D,1);
             sgplvm.a = 1;
             sgplvm.b = 1;
             sgplvm.c = 1;
             [~,~,foo] = svd(sgplvm.y);
             sgplvm.z = foo(:,1:d)';
+            sgplvm.A = sparse([eye(3+sgplvm.D),zeros(3+sgplvm.D,numel(sgplvm.z))]); % a, b, c and w are all constrained to be positive
+            sgplvm.p = zeros(3+sgplvm.D,1);
         end
         
-        function [K d e] = kernel(obj,fa,fb,fc)
+        function [K d e] = kernel(obj,fz,fa,fb,fc)
             if nargin == 1
+                fz = obj.z;
                 fa = obj.a;
                 fb = obj.b;
                 fc = obj.c;
             end
-            zz = obj.z'*obj.z;
+            zz = fz'*fz;
             d = diag(zz)*ones(1,obj.N) - 2*zz + ones(obj.N,1)*diag(zz)';
             e = exp( -fc/2*d );
             K = fa*e + eye(obj.N)/fb;
@@ -59,7 +64,7 @@ classdef ScaledGPLVM
                 fw = obj.w;
                 fz = obj.z;
             end
-            [K g e] = kernel(obj,fa,fb,fc);
+            [K g e] = kernel(obj,fz,fa,fb,fc);
             wy = diag(fw)*obj.y;
             Ki = K^-1; % This is the biggest impediment to scaling
             fy = obj.D*sum(log(diag(chol(K)))) ...
@@ -67,10 +72,10 @@ classdef ScaledGPLVM
                 + 1/2*fz(:)'*fz(:) ...
                 + log(fa) + log(fb) + log(fc) ...
                 - obj.N*sum(log(fw));
-            dK = (-(Ki*wy')*(wy*Ki) + pbj.D*Ki)/2;
+            dK = (-(Ki*wy')*(wy*Ki) + obj.D*Ki)/2;
             dz1 = -fc*(tprod(K,[2 3],fz,[1 2])-tprod(K,[2 3],fz,[1 3]));
             dz = 2*tprod(dK,[2 -1],dz1,[1 2 -1]) + fz;
-            dw = fw.*diag(obj.y*Ki*obj.y')'-obj.N./fw;
+            dw = fw.*diag(obj.y*Ki*obj.y')-obj.N./fw;
             grad = [ trace(dK*e) + 1/fa; ...
                      trace(-dK/fb^2) + 1/fb; ...
                      trace(-1/2*dK*(g.*K)) + 1/fc; ...
@@ -78,7 +83,7 @@ classdef ScaledGPLVM
                      dz(:) ];
         end
         
-        function obj = assign_params(obj,params)
+        function obj = set_params(obj,params)
             % Because gradients are returned in long vector form, we need
             % to be able to assign parameters from one long vector
             
@@ -93,9 +98,13 @@ classdef ScaledGPLVM
             params = [obj.a; obj.b; obj.c; obj.w(:); obj.z(:)];
         end
         
-        function test_grad(obj)
-            [f,grad] = obj.f();
-            params = obj.get_params;
+        function test_grad(obj,params)
+            if nargin == 1
+                [f,grad] = obj.f();
+                params = obj.get_params;
+            else
+                [f,grad] = obj.f(params);
+            end
             for i = 1:length(params)
                 params(i) = params(i) + 1e-5;
                 f_ = obj.f(params);
