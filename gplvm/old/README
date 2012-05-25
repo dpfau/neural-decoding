@@ -1,0 +1,1 @@
+This folder contains an object-oriented implementation of the scaled GPLVM, as well as a custom implementation of L-BFGS.  Since L-BFGS doesn't seem to be working right (objective goes down, but gradient doesn't converge to zero), decided to put this aside and try the more direct route of using Mark Schmidt's minFunc.
