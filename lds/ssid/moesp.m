@@ -30,6 +30,8 @@ function [A B C D x0 s B1 D1 x1] = moesp( y, u, i, N, opts )
 %   opts.noise ~= 'none'
 % rho - the constant factor for the augmented lagrangian in ADMM, if
 %   opts.noise == 'poiss'
+% lag - the number of steps into the past incorporated into the latent
+%   state, for the Poisson output model
 % tfocs_path - path to TFOCS
 %
 % David Pfau, 2011-2012
