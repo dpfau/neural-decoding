@@ -1,6 +1,6 @@
-function [f df] = poiss_loglik_conj( y, k, s, x, t )
+function [f df] = poiss_loglik_conj( y, k, x, t )
 
-if nargin == 3
+if nargin == 4
     error( 'Function does not support proximity operator' )
 else
     f = sum( sum( ( log( 1/k * x + y ) - 1 ) .* ( x + k * y ) ) );

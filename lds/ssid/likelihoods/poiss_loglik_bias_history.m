@@ -1,6 +1,7 @@
-function [f df] = poiss_loglik( y, k, s, x, t )
+function [f df] = poiss_loglik_bias_history( y, k, s, x, t )
+% Poisson log likelihood, including bias and history term
 
-if nargin == 3
+if nargin == 5
     error( 'Function does not support proximity operator' )
 else
     m = size( y, 1 );
