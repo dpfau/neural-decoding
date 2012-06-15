@@ -1,26 +1,47 @@
-function [f df] = poiss_loglik_bias_history( y, k, s, x, t )
-% Poisson log likelihood, including bias and history term
+function [f df Hf] = poiss_loglik_bias_history( y, k, e, g, s, x, t )
+% Poisson log likelihood, including bias and history term, as well as
+% isotropic Gaussian prior on the bias and the history terms.
 
 if nargin == 5
     error( 'Function does not support proximity operator' )
 else
     m = size( y, 1 );
-    assert( size( x, 2 ) == size( y, 2 ) + 1 + m * s, 'Parameters do not match the size of the data' );
-    if s > 0
-        D = x( :, end - m * s + 1 : end );
-        my = mean( y, 2 );
-        Y = block_hankel( [ my( :, ones( 1, s ) ), y ], 1, s, size( y, 2 ) + s - 1 );
-        DY = D*Y;
+    n = size( y, 2 );
+    if isempty( x )
+        f = zeros( m, n + 1 + m * s );
     else
-        DY = 0;
-    end
-    z = x( :, 1 : end - 1 - m * s ) + x( :, ( end - m * s ) ) * ones( 1, size( x, 2 ) - 1 - m * s ) + DY;
-    f = k * sum( sum( -y.*z + exp( z ) ) );
-    if nargout == 2
+        assert( size( x, 2 ) == n + 1 + m * s, 'Parameters do not match the size of the data' );
         if s > 0
-            df = k * [ -y + exp( z ), sum( -y + exp( z ), 2 ), ( -y + exp( z ) ) * Y' ];
+            D = x( :, end - m * s + 1 : end );
+            my = mean( y, 2 );
+            Y = block_hankel( [ my( :, ones( 1, s ) ), y ], 1, s, n + s - 1 );
+            DY = D*Y;
         else
-            df = k * [ -y + exp( z ), sum( -y + exp( z ), 2 ) ];
+            DY = 0;
+        end
+        z = x( :, 1 : n ) + x( :, n + 1 ) * ones( 1, n ) + DY;
+        ez = exp( z );
+        f = k * sum( sum( -y.*z + ez ) ) ...
+            + 1/2 * k * e * x( :, n + 1 )' * x( :, n + 1 ) ...
+            + 1/2 * k * g * x( :, n + 2 : end )' * x( :, n + 2 : end );
+        if nargout >= 2
+            if s > 0
+                df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, n + 1 ), ( -y + ez ) * Y' + g * x( :, n + 2 : end ) ];
+            else
+                df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, n + 1 ) ];
+            end
+            if nargout == 3
+                if s > 0
+                    i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
+                    j = [ 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 ), 1 : m * ( n - 1 ), m * ( n - 1 ) + ( 1 : m ) ];
+                    h = k * [ ez, ez, ez, e + sum( ez, 2 ) ];
+                else
+                    i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
+                    j = [ 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 ), 1 : m * ( n - 1 ), m * ( n - 1 ) + ( 1 : m ) ];
+                    h = k * [ ez, ez, ez, e + sum( ez, 2 ) ];
+                end
+                Hf = sparse( i, j, h, numel( x ), numel( x ) );
+            end
         end
     end
 end
