@@ -10,7 +10,7 @@ else
     if isempty( x )
         f = zeros( m, n + 1 + m * s );
     else
-        assert( size( x, 2 ) == n + 1 + m * s, 'Parameters do not match the size of the data' );
+        assert( ( size( x, 2 ) == n + 1 + m * s ) & ( size( x, 1 ) == m ), 'Parameters do not match the size of the data' );
         if s > 0
             D = x( :, end - m * s + 1 : end );
             my = mean( y, 2 );
@@ -32,15 +32,16 @@ else
             end
             if nargout == 3
                 if s > 0
-                    ezY = tprod( ez, [1 3], Y, [2 3] );
+                    ezY = tprod( ez, [1 2], Y, [3 2] );
                     xx = 1 : m * ( n - 1 ); % Diagonal indices are same for i and j
                     xb = repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 );
                     bb = m * ( n - 1 ) + ( 1 : m );
-                    xd =;
-                    bd =;
-                    dd =;
-                    i = [ xx, xx, xb, bb, repmat( xx, 1, m * s ), xd, bb, bd, dd ];
-                    j = [ xx, xb, xx, bb, xd, repmat( xx, 1, m * s ), bd, bb, dd ];
+                    xd = repmat( reshape( m * n + ( 1 : m * m * s ), m, m * s  ), n, 1 );
+                    bd = m * n + ( 1 : m * m * s );
+                    dd_i = repmat( bd, 1, m * s );
+                    dd_j = repmat( reshape( bd, m, m * s ), m * s, 1 );
+                    i = [ xx, xx, xb, bb, repmat( xx, 1, m * s ), xd, repmat( bb, 1, m * s ), bd, dd_i ];
+                    j = [ xx, xb, xx, bb, xd, repmat( xx, 1, m * s ), bd, repmat( bb, 1, m * s ), dd_j ];
                     h = k * [ ez, ez, ez, e + sum( ez, 2 ), ezY, ezY, sum( ezY, 3 ), sum( ezY, 3 ), g + tprod( tprod( ez, [1 3], Y, [2 3] ), [1 2 -1], Y, [3 -1] ) ];
                 else
                     i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
