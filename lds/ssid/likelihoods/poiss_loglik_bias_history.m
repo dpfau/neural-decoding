@@ -32,9 +32,16 @@ else
             end
             if nargout == 3
                 if s > 0
-                    i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
-                    j = [ 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 ), 1 : m * ( n - 1 ), m * ( n - 1 ) + ( 1 : m ) ];
-                    h = k * [ ez, ez, ez, e + sum( ez, 2 ) ];
+                    ezY = tprod( ez, [1 3], Y, [2 3] );
+                    xx = 1 : m * ( n - 1 ); % Diagonal indices are same for i and j
+                    xb = repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 );
+                    bb = m * ( n - 1 ) + ( 1 : m );
+                    xd =;
+                    bd =;
+                    dd =;
+                    i = [ xx, xx, xb, bb, repmat( xx, 1, m * s ), xd, bb, bd, dd ];
+                    j = [ xx, xb, xx, bb, xd, repmat( xx, 1, m * s ), bd, bb, dd ];
+                    h = k * [ ez, ez, ez, e + sum( ez, 2 ), ezY, ezY, sum( ezY, 3 ), sum( ezY, 3 ), g + tprod( tprod( ez, [1 3], Y, [2 3] ), [1 2 -1], Y, [3 -1] ) ];
                 else
                     i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
                     j = [ 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 ), 1 : m * ( n - 1 ), m * ( n - 1 ) + ( 1 : m ) ];
