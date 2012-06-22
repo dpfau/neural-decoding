@@ -27,7 +27,7 @@ else
             + 1/2 * k * g * D( : )' * D( : );
         if nargout >= 2
             if s > 0
-                df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, n + 1 ), ( -y + ez ) * Y' + g * x( :, n + 2 : end ) ];
+                df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, n + 1 ), ( -y + ez ) * Y' + g * D ];
             else
                 df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, n + 1 ) ];
             end
@@ -53,7 +53,7 @@ else
                 end
                 Hf = sparse( i, j, h, numel( x ), numel( x ) );
                 if s > 0
-                    Hf = Hf + g * sparse( m * ( n + 1 ) + ( 1 : m * m * s ), m * ( n + 1 ) + ( 1 : m * m * s ), ones( 1, m * m * s ) );
+                    Hf = Hf + g * k * sparse( m * ( n + 1 ) + ( 1 : m * m * s ), m * ( n + 1 ) + ( 1 : m * m * s ), ones( 1, m * m * s ) );
                 end
             end
         end
