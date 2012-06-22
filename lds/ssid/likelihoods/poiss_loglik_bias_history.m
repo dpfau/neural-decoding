@@ -34,9 +34,9 @@ else
             if nargout == 3
                 if s > 0
                     ezY = tprod( ez, [1 2], Y, [3 2] );
-                    xx = 1 : m * ( n - 1 ); % Diagonal indices are same for i and j
-                    xb = repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 );
-                    bb = m * ( n - 1 ) + ( 1 : m );
+                    xx = 1 : m * n; % Diagonal indices are same for i and j
+                    xb = repmat( m * n + ( 1 : m ), 1, n );
+                    bb = m * n + ( 1 : m );
                     xd = repmat( reshape( m * n + ( 1 : m * m * s ), m, m * s  ), n, 1 );
                     bd = m * n + ( 1 : m * m * s );
                     dd_i = repmat( bd, 1, m * s );
@@ -47,11 +47,14 @@ else
                          reshape( ezY, m, n * m * s ), reshape( ezY, m, n * m * s ), squeeze( sum( ezY, 2 ) ), squeeze( sum( ezY, 2 ) ), ...
                          reshape( tprod( tprod( ez, [1 3], Y, [2 3] ), [1 2 -1], Y, [3 -1] ), m, m * m * s * s ) ];
                 else
-                    i = [ 1 : m * n, 1 : m * n, repmat( m * n + ( 1 : m ), 1, n ) ] ;
-                    j = [ 1 : m * n, repmat( m * n + ( 1 : m ), 1, n - 1 ), 1 : m * n, m * n + ( 1 : m ) ];
+                    i = [ 1 : m * n, 1 : m * n, repmat( m * n + ( 1 : m ), 1, n + 1 ) ] ;
+                    j = [ 1 : m * n, repmat( m * n + ( 1 : m ), 1, n ), 1 : m * n, m * n + ( 1 : m ) ];
                     h = k * [ ez, ez, ez, e + sum( ez, 2 ) ];
                 end
-                Hf = sparse( i, j, h, numel( x ), numel( x ) ) + g * sparse( m * n + ( 1 : m * m * s ), m * n + ( 1 : m * m * s ), ones( 1, m * m * s ) );
+                Hf = sparse( i, j, h, numel( x ), numel( x ) );
+                if s > 0
+                    Hf = Hf + g * sparse( m * ( n + 1 ) + ( 1 : m * m * s ), m * ( n + 1 ) + ( 1 : m * m * s ), ones( 1, m * m * s ) );
+                end
             end
         end
     end
