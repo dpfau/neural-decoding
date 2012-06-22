@@ -37,8 +37,8 @@ else
                     xx = 1 : m * n; % Diagonal indices are same for i and j
                     xb = repmat( m * n + ( 1 : m ), 1, n );
                     bb = m * n + ( 1 : m );
-                    xd = repmat( reshape( m * n + ( 1 : m * m * s ), m, m * s  ), n, 1 );
-                    bd = m * n + ( 1 : m * m * s );
+                    xd = repmat( reshape( m * ( n + 1 ) + ( 1 : m * m * s ), m, m * s  ), n, 1 );
+                    bd = m * ( n + 1 ) + ( 1 : m * m * s );
                     dd_i = repmat( bd, 1, m * s );
                     dd_j = repmat( reshape( bd, m, m * s ), m * s, 1 );
                     i = [ xx, xx, xb, bb, repmat( xx, 1, m * s ), xd( : )', repmat( bb, 1, m * s ), bd, dd_i ];
