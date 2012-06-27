@@ -3,7 +3,11 @@ function [f df Hf] = poiss_loglik_bias( y, k, e, x, t )
 % Also includes a small quadratic penalty on the bias, scaled by e
 
 if nargin == 5
-    error( 'Function does not support proximity operator' )
+    if numel( t ) == 1
+        error( 'Function does not support proximity operator' )
+    else
+        f = 1;
+    end
 else
     if isempty( x )
         f = zeros( size( y, 1 ), size( y, 2 ) + 1 );

@@ -2,8 +2,12 @@ function [f df Hf] = poiss_loglik_bias_history( y, k, e, g, s, x, t )
 % Poisson log likelihood, including bias and history term, as well as
 % isotropic Gaussian prior on the bias and the history terms.
 
-if nargin == 5
-    error( 'Function does not support proximity operator' )
+if nargin == 7
+    if numel( t ) == 1
+        error( 'Function does not support proximity operator' )
+    else
+        f = 1;
+    end
 else
     m = size( y, 1 );
     n = size( y, 2 );

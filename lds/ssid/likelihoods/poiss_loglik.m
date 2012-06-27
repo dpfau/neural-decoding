@@ -2,7 +2,15 @@ function [f df Hf] = poiss_loglik( y, k, x, t )
 % Poisson log likelihood, without bias or history term
 
 if nargin == 4
-    error( 'Function does not support proximity operator' )
+    % Overload the 4th argument.  One possible use is in evaluating the
+    % proximity operator for TFOCS, in which case throw an error.  Another
+    % possible use is to evaluate whether the particular vector passed is
+    % in the domain of the convex conjugate.
+    if numel( t ) == 1
+        error( 'Function does not support proximity operator' )
+    else
+        f = nnz( 1/k * t + y < 0 ) == 0;
+    end
 else
     if isempty( x ) % Used for computing the convex conjugate.  Returns vector in the domain of the function to initialize a minimization
         f = zeros( size( y ) );
