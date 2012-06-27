@@ -33,7 +33,8 @@ switch opts.noise
         tfocs_opts.tol = 1e-4;
         tfocs_opts.maxIts = 1e3;
         tfocs_opts.printEvery = 1;
-        f = make_convex_conjugate( @(x) poiss_loglik_bias_history( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1, 1, opts.lag, x ) );
+%        f = make_convex_conjugate( @(x) poiss_loglik_bias_history( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1, 1, opts.lag, x ) );
+        f = make_convex_conjugate( @(varargin) poiss_loglik_bias( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1e-2, varargin{:} ) );
         Zh = tfocs( f, ...
                     @(varargin) adjoint_hankel_op( Un, l, i, N, opts.lag, varargin{:} ), ...
                     @proj_spectral, ...

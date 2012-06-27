@@ -17,14 +17,14 @@ else
         n = size( x, 2 );
         z = x( :, 1 : end - 1 ) + x( :, end ) * ones( 1, n - 1 );
         ez = exp( z );
-        f = k * sum( sum( -y.*z + ez ) ) + 1/2 * k * e * x( :, end )' * x( :, end );
+        f = k * sum( sum( -y.*z + ez ) ) + 1/2 * k * e * x( : )' * x( : );
         if nargout >= 2
-            df = k * [ -y + ez, sum( -y + ez, 2 ) + e * x( :, end ) ];
+            df = k * [ -y + ez, sum( -y + ez, 2 ) ] + k * e * x;
             if nargout == 3
                 i = [ 1 : m * ( n - 1 ), 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n ) ] ;
                 j = [ 1 : m * ( n - 1 ), repmat( m * ( n - 1 ) + ( 1 : m ), 1, n - 1 ), 1 : m * ( n - 1 ), m * ( n - 1 ) + ( 1 : m ) ];
-                h = k * [ ez, ez, ez, e + sum( ez, 2 ) ];
-                Hf = sparse( i, j, h, numel( x ), numel( x ) );
+                h = k * [ ez, ez, ez, sum( ez, 2 ) ];
+                Hf = sparse( i, j, h, numel( x ), numel( x ) ) + sparse( 1:numel( x ), 1:numel( x ), k * e * ones( 1, numel( x ) ) );
             end
         end
     end
