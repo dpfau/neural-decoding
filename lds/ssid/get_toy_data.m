@@ -1,11 +1,11 @@
-addpath '/Users/davidpfau/Documents/Paninski Group/neural-decoding/util'
-addpath '/Users/davidpfau/Documents/Paninski Group/neural-decoding/lds/plds'
+addpath '../../util'
+addpath '../plds'
 
-m = 4; n = 5; l = 3;
+m = 20; n = 50; l = 10;
 
 u = randn(m,1000);
 
-A = randn(n)/4;
+A = randn(n)/10;
 B = randn(n,m);
 C = randn(l,n)/25;
 

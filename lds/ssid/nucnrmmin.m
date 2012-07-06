@@ -33,12 +33,39 @@ switch opts.noise
         tfocs_opts.tol = 1e-4;
         tfocs_opts.maxIts = 1e3;
         tfocs_opts.printEvery = 1;
-%        f = make_convex_conjugate( @(x) poiss_loglik_bias_history( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1, 1, opts.lag, x ) );
-        f = make_convex_conjugate( @(varargin) poiss_loglik_bias( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1e-2, varargin{:} ) );
+        f = make_convex_conjugate( @(varargin) poiss_loglik( y(:,1:N), s0(1)/l/N/opts.vsig^2, varargin{:} ) );
         Zh = tfocs( f, ...
-                    @(varargin) adjoint_hankel_op( Un, l, i, N, opts.lag, varargin{:} ), ...
-                    @proj_spectral, ...
-                    zeros( size( hankel_op( Un, l, i, N, y(:,1:N), 1 ) ) ), tfocs_opts );
+            @(varargin) adjoint_hankel_op( Un, l, i, N, 0, varargin{:} ), ...
+            @proj_spectral, ...
+            zeros( size( hankel_op( Un, l, i, N, y(:,1:N), 1 ) ) ), tfocs_opts );
+        [~,yh] = poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, adjoint_hankel( Zh * Un', i, N ) );
+        Oi = hankel_op( Un, l, i, N, yh, 1 );
+    case 'poiss_bias'
+        addpath( opts.tfocs_path )
+        s0 = svd(Y*Un);
+        tfocs_opts = tfocs;
+        tfocs_opts.tol = 1e-4;
+        tfocs_opts.maxIts = 1e3;
+        tfocs_opts.printEvery = 1;
+        f = make_convex_conjugate( @(x) poiss_loglik_bias( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1, x ) );
+        Zh = tfocs( f, ...
+            @(varargin) adjoint_hankel_op( Un, l, i, N, 1, varargin{:} ), ...
+            @proj_spectral, ...
+            zeros( size( hankel_op( Un, l, i, N, y(:,1:N), 1 ) ) ), tfocs_opts );
+        [~,yh] = poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, adjoint_hankel( Zh * Un', i, N ) );
+        Oi = hankel_op( Un, l, i, N, yh, 1 );
+    case 'poiss_history'
+        addpath( opts.tfocs_path )
+        s0 = svd(Y*Un);
+        tfocs_opts = tfocs;
+        tfocs_opts.tol = 1e-4;
+        tfocs_opts.maxIts = 1e3;
+        tfocs_opts.printEvery = 1;
+        f = make_convex_conjugate( @(x) poiss_loglik_bias_history( y(:,1:N), s0(1)/l/N/opts.vsig^2, 1, 1, opts.lag, x ) );
+        Zh = tfocs( f, ...
+            @(varargin) adjoint_hankel_op( Un, l, i, N, 1 + l*opts.lag, varargin{:} ), ...
+            @proj_spectral, ...
+            zeros( size( hankel_op( Un, l, i, N, y(:,1:N), 1 ) ) ), tfocs_opts );
         [~,yh] = poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, adjoint_hankel( Zh * Un', i, N ) );
         Oi = hankel_op( Un, l, i, N, yh, 1 );
     case 'poiss_admm'
