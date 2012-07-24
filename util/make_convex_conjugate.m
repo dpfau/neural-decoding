@@ -29,7 +29,7 @@ function f_conj = make_convex_conjugate( f, z0 )
             y = +Inf;
             grad = zeros( size( x ) );
         else
-            [grad,y] = newtons_method( @(z) conjugate_objective( f, x, z ), z0, 1e-6, 0 );
+            [grad,y] = newtons_method( @(z) conjugate_objective( f, x, z ), z0 );
             y = -y;
             z0 = grad; % Closure!
         end

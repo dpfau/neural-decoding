@@ -9,7 +9,8 @@ else
             df = zeros( size( x ) );
         end
     else
-        f = sum( sum( ( log( 1/k * x + y ) - 1 ) .* ( x + k * y ) ) );
+        idx = 1/k * x + y ~= 0; % Handles edge cases
+        f = sum( sum( ( log( 1/k * x(idx) + y(idx) ) - 1 ) .* ( x(idx) + k * y(idx) ) ) );
         if nargout == 2
             df = log( 1/k * x + y );
         end

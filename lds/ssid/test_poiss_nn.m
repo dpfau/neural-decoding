@@ -1,4 +1,6 @@
-get_toy_data
+%get_toy_data
+x = dlmread('x.txt');
+u = dlmread('u.txt');
 
 opts.noise = 'poiss';
 opts.proj = 'orth_svd';
