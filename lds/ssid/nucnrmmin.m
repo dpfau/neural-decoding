@@ -33,13 +33,11 @@ switch opts.noise
         tfocs_opts.tol = 1e-4;
         tfocs_opts.maxIts = 1e3;
         tfocs_opts.printEvery = 1;
-        % f = make_convex_conjugate( @(varargin) poiss_loglik( y(:,1:N), s0(1)/l/N/opts.vsig^2, varargin{:} ) );
-        f = @(varargin) poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, varargin{:} );
-        x0 = conj_grad_underdet( @(varargin) adjoint_hankel_op( Un, l, i, N, 0, varargin{:} ), ones( size( y(:,1:N) ) ) );
-        Zh = tfocs( f, ...
-            @(varargin) adjoint_hankel_op( Un, l, i, N, 0, varargin{:} ), ...
-            @proj_spectral, ...
-            x0, tfocs_opts );
+        % smoothF = make_convex_conjugate( @(varargin) poiss_loglik( y(:,1:N), s0(1)/l/N/opts.vsig^2, varargin{:} ) );
+        smoothF = @(varargin) poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, varargin{:} );
+        affineF = @(varargin) adjoint_hankel_op( Un, l, i, N, 0, varargin{:} );
+        x0 = find_pos( affineF, size( y(:,1:N) ) );
+        Zh = tfocs( smoothF, affineF, @proj_spectral, x0, tfocs_opts );
         [~,yh] = poiss_loglik_conj( y(:,1:N), s0(1)/l/N/opts.vsig^2, adjoint_hankel( Zh * Un', i, N ) );
         Oi = hankel_op( Un, l, i, N, yh, 1 );
     case 'poiss_bias'

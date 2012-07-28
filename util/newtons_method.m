@@ -14,11 +14,11 @@ decr = Inf;
 while decr > eps
     i = i+1;
     fx0 = fx;
-    
-    if issparse( Hinfo )
-        H = Hinfo;
-    elseif isstruct( Hinfo )
+
+    if isstruct( Hinfo )
         H = sparse_hess( Hinfo );
+    else
+        H = Hinfo;
     end
     
     dx = H\grad(:);

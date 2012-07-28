@@ -1,4 +1,4 @@
-function x = conj_grad_underdet( linop, b )
+function x = solve_underdet( linop, b )
 % Solves the underdetermined linear system b = linop( x ) for x where
 % linop is a linear operator in TFOCS format.  Used for initializing TFOCS 
 % at a feasible point.  Specifically, it solves the system
