@@ -4,7 +4,9 @@ function [A B C D x0 s B1 D1 x1] = moesp( y, u, i, N, opts )
 % y(t) = C*x(t) + D*u(t)
 % For data with output noise, one approach following Zhang and Vandenberghe
 % 2010 is to use nuclear norm minimization.  To use this approach with this
-% code, TFOCS is required: http://tfocs.stanford.edu/
+% code, TFOCS is required: http://tfocs.stanford.edu/.  However, this is
+% likely to be superseded by their follow-up with Hansson in 2012, which
+% does not require TFOCS.
 %
 % Mandatory inputs:
 % y - output data, one column per time step
@@ -29,10 +31,12 @@ function [A B C D x0 s B1 D1 x1] = moesp( y, u, i, N, opts )
 % vsig - the tradeoff between output log likelihood and nuclear norm, if
 %   opts.noise ~= 'none'
 % rho - the constant factor for the augmented lagrangian in ADMM, if
-%   opts.noise == 'poiss'
+%   opts.noise == 'poiss_admm' or 'lhv'
 % lag - the number of steps into the past incorporated into the latent
 %   state, for the Poisson output model
 % tfocs_path - path to TFOCS
+% eps_rel, eps_abs - relative and absolute thresholds for ADMM,
+%   respectively
 %
 % David Pfau, 2011-2012
 

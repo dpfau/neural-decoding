@@ -122,6 +122,62 @@ switch opts.noise
             fprintf('%3d\t%10.4f\t%10.4f\t%10.2f\n', iter, r_norm, s_norm, obj );
         end
         Oi = hankel_op( Un, l, i, N, yh, 1 );
+    case 'lhv' % The ADMM method of Liu, Hansson and Vandenberghe, 2012
+        % set default values for stopping criteria
+        if isfield(opts, 'rho')
+            rho = opts.rho;
+        else
+            rho = 1.3;
+        end
+        if isfield(opts, 'eps_abs')
+            eps_abs = opts.eps_abs;
+        else
+            eps_abs = 1e-6;
+        end
+        if isfield(opts, 'eps_rel')
+            eps_rel = opts.eps_rel;
+        else
+            eps_rel = 1e-3;
+        end
+        A     = @(x) block_hankel( x, 1, i, N ) * Un; % No instrumental variables or weighting matrices here, to add later.
+        A_adj = @(x) adjoint_hankel( x * Un', i, N );
+        
+        p = l*i;
+        q = size(Un,2);
+        X = zeros(p,q);
+        Z = zeros(p,q);
+        x = log(y + 1e-3);
+        r_p = Inf; r_d = Inf;
+        e_p = 0; e_d = 0;
+        i = 0;
+        fprintf('Iter:\t r_p:\t e_p:\t r_d:\t e_d\n')
+        while norm( r_p, 'fro' ) > e_p && norm( r_d ) > e_d
+            
+            x_ = newtons_method( @(x) lhv_ll( x, X, Z, y, rho, Un ) ); % Naive implementation that does not take advantage of speedup described in LHV2012
+            Ax_ = A( x_ );
+            
+            [u,s,v] = svd( Ax_ + Z/rho );
+            X_ = u*( s - eye(p,q)/rho )*v';
+            
+            Z_ = Z + rho * ( Ax_ - X_ );
+            
+            % compute residuals and thresholds
+            r_p = Ax_ - X_;
+            r_d = opts.rho * A_adj( X - X_ );
+            e_p = sqrt(p*q) * eps_abs + eps_rel * max( norm( Ax_, 'fro' ), norm( X_, 'fro' ) );
+            e_d = sqrt(l*N) * eps_abs + eps_rel * norm( A_adj( Z ), 'fro' );
+            
+            % update
+            X = X_;
+            Z = Z_;
+            x = x_;
+            
+            % print
+            i = 1 + 1;
+            fprintf('%i\t %2.4d\t %2.4d\t %2.4d\t %2.4d\n', i, r_p, e_p, r_d, e_d);
+        end
     otherwise
         error(['''' opts.noise ''' is not a recognized output noise.']);
 end
+
+function [f df Hf] = lhv_ll( x, X, Z, y, rho, Un ) 
