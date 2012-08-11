@@ -122,7 +122,7 @@ switch opts.noise
             fprintf('%3d\t%10.4f\t%10.4f\t%10.2f\n', iter, r_norm, s_norm, obj );
         end
         Oi = hankel_op( Un, l, i, N, yh, 1 );
-    case 'lhv' % The ADMM method of Liu, Hansson and Vandenberghe, 2012
+    case {'gauss_lhv','poiss_lhv'} % The ADMM method of Liu, Hansson and Vandenberghe, 2012
         % set default values for stopping criteria
         if isfield(opts, 'rho')
             rho = opts.rho;
@@ -142,28 +142,37 @@ switch opts.noise
         A     = @(x) block_hankel( x, 1, i, N ) * Un; % No instrumental variables or weighting matrices here, to add later.
         A_adj = @(x) adjoint_hankel( x * Un', i, N );
         
+        % s0 = svd(Y*Un);
         p = l*i;
         q = size(Un,2);
         X = zeros(p,q);
-        Z = zeros(p,q);
+        Z = ones(p,q);
         x = log(y + 1e-3);
+        
         r_p = Inf; r_d = Inf;
         e_p = 0; e_d = 0;
-        i = 0;
-        fprintf('Iter:\t r_p:\t e_p:\t r_d:\t e_d\n')
-        while norm( r_p, 'fro' ) > e_p && norm( r_d ) > e_d
+        iter = 0;
+        fprintf('Iter:\t objective:\t aug lgrn:\t r_p:\t\t e_p:\t\t r_d:\t\t e_d:\n')
+        while norm( r_p, 'fro' ) > e_p || norm( r_d ) > e_d
             
-            x_ = conj_grad( @(x) exp( x ) .* x + rho * A_adj( A( x ) ), A_adj( rho * X - Z ) + exp( x ) .* ( -y + exp( x ) )); % Naive implementation that does not take advantage of speedup described in LHV2012
+            % Naive implementation that does not take advantage of speedup described in LHV2012
+            if strcmp(opts.noise,'poiss_lhv')
+                x_ = conj_grad( @(w) opts.lambda * exp( x ) .* w + rho * A_adj( A( w ) ), ...
+                                A_adj( rho * X - Z ) + opts.lambda * exp( x ) .* ( -y + exp( x ) ) );
+            else
+                x_ = conj_grad( @(w) opts.lambda * reshape( opts.H * w(:), size( w ) ) + rho * A_adj( A( w ) ), ...
+                                A_adj( rho * X - Z ) + opts.lambda * reshape( opts.H * opts.a, size( x ) ) );
+            end
             Ax_ = A( x_ );
             
             [u,s,v] = svd( Ax_ + Z/rho );
-            X_ = u*( s - eye(p,q)/rho )*v';
+            X_ = u*max( s - eye(p,q)/rho, 0 )*v';
             
             Z_ = Z + rho * ( Ax_ - X_ );
             
             % compute residuals and thresholds
             r_p = Ax_ - X_;
-            r_d = opts.rho * A_adj( X - X_ );
+            r_d = rho * A_adj( X - X_ );
             e_p = sqrt(p*q) * eps_abs + eps_rel * max( norm( Ax_, 'fro' ), norm( X_, 'fro' ) );
             e_d = sqrt(l*N) * eps_abs + eps_rel * norm( A_adj( Z ), 'fro' );
             
@@ -171,11 +180,20 @@ switch opts.noise
             X = X_;
             Z = Z_;
             x = x_;
+            if strcmp(opts.noise,'poiss_lhv')
+                f = opts.lambda * sum( sum( -y .* x + exp( x ) ) );
+            else
+                f = opts.lambda/2 * ( x(:) - opts.a )' * opts.H * ( x(:) - opts.a );
+            end
+            obj = sum( max( svd( Ax_ ) - 1 / rho, 0 ) ) + f;
+            aug_lgrn = sum( max( diag( s ) - 1 / rho, 0 ) ) + f + trace( Z' * ( Ax_ - X ) ) + rho/2 * norm( Ax_ - X, 'fro' );
             
             % print
-            i = 1 + 1;
-            fprintf('%i\t %2.4d\t %2.4d\t %2.4d\t %2.4d\n', i, r_p, e_p, r_d, e_d);
+            iter = iter + 1;
+            fprintf('%i\t %1.2d\t %1.2d\t %1.2d\t %1.2d\t %1.2d\t %1.2d\n', iter, obj, aug_lgrn, norm( r_p, 'fro' ), e_p, norm( r_d ), e_d);
         end
+        yh = x;
+        Oi = A( yh );
     otherwise
         error(['''' opts.noise ''' is not a recognized output noise.']);
 end
