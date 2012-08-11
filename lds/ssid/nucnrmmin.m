@@ -153,7 +153,7 @@ switch opts.noise
         fprintf('Iter:\t r_p:\t e_p:\t r_d:\t e_d\n')
         while norm( r_p, 'fro' ) > e_p && norm( r_d ) > e_d
             
-            x_ = newtons_method( @(x) lhv_ll( x, X, Z, y, rho, Un ) ); % Naive implementation that does not take advantage of speedup described in LHV2012
+            x_ = conj_grad( @(x) exp( x ) .* x + rho * A_adj( A( x ) ), A_adj( rho * X - Z ) + exp( x ) .* ( -y + exp( x ) )); % Naive implementation that does not take advantage of speedup described in LHV2012
             Ax_ = A( x_ );
             
             [u,s,v] = svd( Ax_ + Z/rho );
@@ -179,5 +179,3 @@ switch opts.noise
     otherwise
         error(['''' opts.noise ''' is not a recognized output noise.']);
 end
-
-function [f df Hf] = lhv_ll( x, X, Z, y, rho, Un ) 
