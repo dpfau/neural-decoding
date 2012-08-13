@@ -123,6 +123,10 @@ switch opts.noise
         end
         Oi = hankel_op( Un, l, i, N, yh, 1 );
     case {'gauss_lhv','poiss_lhv'} % The ADMM method of Liu, Hansson and Vandenberghe, 2012
+        % This seems to work.  Things to add:
+        %   -weighting matrices
+        %   -speedups described in LHV
+        %   -bias and history terms for poisson likelihood
         % set default values for stopping criteria
         if isfield(opts, 'rho')
             rho = opts.rho;
@@ -146,7 +150,7 @@ switch opts.noise
         p = l*i;
         q = size(Un,2);
         X = zeros(p,q);
-        Z = ones(p,q);
+        Z = zeros(p,q);
         x = log(y + 1e-3);
         
         r_p = Inf; r_d = Inf;
@@ -157,15 +161,27 @@ switch opts.noise
             
             % Naive implementation that does not take advantage of speedup described in LHV2012
             if strcmp(opts.noise,'poiss_lhv')
-                x_ = conj_grad( @(w) opts.lambda * exp( x ) .* w + rho * A_adj( A( w ) ), ...
-                                A_adj( rho * X - Z ) + opts.lambda * exp( x ) .* ( -y + exp( x ) ) );
+                H = @(w) exp( x ) .* w; % Hessian-vector product
+                g = exp( x ) - y; % gradient
+                a = x;
+                f0 = sum( sum( exp( x ) - y .* x ) ); % constant
             else
-                x_ = conj_grad( @(w) opts.lambda * reshape( opts.H * w(:), size( w ) ) + rho * A_adj( A( w ) ), ...
-                                A_adj( rho * X - Z ) + opts.lambda * reshape( opts.H * opts.a, size( x ) ) );
+                H = @(w) reshape( opts.H * w(:), size( w ) );
+                g = opts.g;
+                a = opts.a;
+                f0 = opts.f0;
             end
+            x_ = conj_grad( @(w) opts.lambda * H( w ) + rho * A_adj( A( w ) ), ...
+                            A_adj( rho * X - Z ) + opts.lambda * ( H( a ) - g ) );
             Ax_ = A( x_ );
             
             [u,s,v] = svd( Ax_ + Z/rho );
+            if iter == 0
+                while max( max( s ) ) < 1/rho % make sure things don't shrink to zero on the first iteration
+                    Z = Z + eye(p,q);
+                    [u,s,v] = svd( Ax_ + Z/rho );
+                end
+            end
             X_ = u*max( s - eye(p,q)/rho, 0 )*v';
             
             Z_ = Z + rho * ( Ax_ - X_ );
@@ -180,10 +196,10 @@ switch opts.noise
             X = X_;
             Z = Z_;
             x = x_;
-            if strcmp(opts.noise,'poiss_lhv')
-                f = opts.lambda * sum( sum( -y .* x + exp( x ) ) );
+            if strcmp( opts.noise, 'gauss_lhv' )
+                f = opts.lambda * ( f0 + g(:)' * ( x(:) - a(:) ) + 1/2 * sum( sum( ( x - a ) .* H( x - a ) ) ) );
             else
-                f = opts.lambda/2 * ( x(:) - opts.a )' * opts.H * ( x(:) - opts.a );
+                f = opts.lambda * sum( sum( exp( x ) - y .* x ) );
             end
             obj = sum( max( svd( Ax_ ) - 1 / rho, 0 ) ) + f;
             aug_lgrn = sum( max( diag( s ) - 1 / rho, 0 ) ) + f + trace( Z' * ( Ax_ - X ) ) + rho/2 * norm( Ax_ - X, 'fro' );
