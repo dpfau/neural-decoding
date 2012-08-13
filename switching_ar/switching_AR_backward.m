@@ -7,7 +7,7 @@ t = size( x, 2 );
 z_ = ones( n, t-k );
 V = zeros( n );
 for i = t-k-1:-1:1
-    z_(:,i) = z(:,i+1)'*diag(l(:,i))*T/c(i+1);
-    V = V + ( (z_(:,i+1)*z(:,i)') .* (diag(l(:,i))*T) )/c(i+1);
+    z_(:,i) = z_(:,i+1)'*diag(l(:,i+1))*T/c(i+1);
+    V = V + ( (z_(:,i+1)*z(:,i)') .* (diag(l(:,i+1))*T) )/c(i+1);
 end
 z_ = z.*z_;

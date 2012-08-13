@@ -9,7 +9,7 @@ c = zeros( 1, t-k );
 
 x_ = zeros( m*k, t-k );
 for i = 1:k
-    x_((1:m) + m*(k-1),:) = x(:,i:end-k+i-1);
+    x_((1:m) + m*(i-1),:) = x(:,i:end-k+i-1);
 end
 
 l = zeros( n, t-k );

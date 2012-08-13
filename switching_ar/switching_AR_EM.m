@@ -1,6 +1,6 @@
 function [A Q T p0 mx] = switching_AR_EM( x, k, n )
 
-eps = 1e-12;
+eps = 1e-6;
 A = cell(n,1);
 Q = cell(n,1);
 [A0 Q0 mx] = AR(x,x,k);
@@ -16,7 +16,7 @@ ll_ = -Inf;
 [z c l] = switching_AR_forward( x, A, Q, T, p0 );
 ll = sum( log( c ) ); 
 iter = 0;
-while abs( ll - ll_ ) > eps
+while abs( ll - ll_ ) > eps || iter < 10
     ll_ = ll;
     [z V] = switching_AR_backward( x, A, T, z, c, l );
     [A Q T p0] = switching_AR_M_step( x, z, V, k );

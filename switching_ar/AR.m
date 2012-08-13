@@ -8,8 +8,8 @@ y = y - repmat(mx,1,q);
 x_ = zeros(k*m,n-k);
 y_ = zeros(k*m,q-k);
 for i = 1:k
-    x_((1:m) + m*(k-1),:) = x(:,i:end-k+i-1);
-    y_((1:m) + m*(k-1),:) = y(:,i:end-k+i-1);
+    x_((1:m) + m*(i-1),:) = x(:,i:end-k+i-1);
+    y_((1:m) + m*(i-1),:) = y(:,i:end-k+i-1);
 end
 A = x(:,k+1:end)*pinv(x_);
 r = x(:,k+1:end) - A*x_;
