@@ -22,21 +22,11 @@ switch init
         T = (1-1e-2) * eye(n) + 1e-2/n; % set initial switching probability to 1/100, why not?
         p0 = ones(n,1)/n;
     case 'rand'
-        T = rand(n);
-        T = T./( ones(n,1)*sum(T) );
-        p0 = rand(n,1);
-        p0 = p0/sum(p0);
-        for i = 1:n
-            A{i} = randn(m,k*m);
-            Q{i} = randn(m);
-            Q{i} = Q{i}*Q{i}';
-        end
-    case 'chunk'
         q = 100;
         t = size( x, 2 );
         z = zeros( n, t-k );
         V = zeros( n );
-        switches = [1, sort(ceil(t*rand(q,1))), t];
+        switches = [1, sort(ceil((t-k)*rand(1,q))), t-k];
         for i = 1:q+1
             z( ceil( n*rand ), switches(i):switches(i+1) ) = 1;
         end

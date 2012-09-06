@@ -19,7 +19,7 @@ for i = 1:n
     lnorm(i) = -m/2*log(2*pi) - sum(log(diag(chol(Q{i}))));
     r{i} = x(:,k+1:end) - A{i} * x_;
     Qinv = Q{i}^-1;
-    l(i,:) = exp( lnorm(i) - 1/2*tprod( tprod( Qinv, [-1 1], r{i}, [-1 2]), [-1 2], r{i}, [-1 2] ) );
+    l(i,:) = exp( lnorm(i) - 1/2*tprod( tprod( Qinv, [-1 1], r{i}, [-1 2], 'n'), [-1 2], r{i}, [-1 2], 'n' ) );
 end
 
 zt = p0;
