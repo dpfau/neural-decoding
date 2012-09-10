@@ -1,5 +1,10 @@
-function [z c l] = switching_AR_forward( x, A, Q, T, p0 )
+function [z c l] = switching_AR_forward( x, A, Q, T, p0, mx )
 
+tiny = 1e-300;
+if nargin < 6
+    mx = zeros( size( x, 1 ), 1 );
+end
+x = x - mx( :, ones( 1, size( x, 2 ) ) );
 n = length( A );
 m = size( x, 1 );
 k = size( A{1}, 2 ) / m;
@@ -27,5 +32,9 @@ for i = 1:t-k
     zt = diag(l(:,i))*T*zt;
     c(i) = sum(zt);
     zt = zt/c(i);
+    if c(i) == 0 % In case of numerical underflow, just reset everything
+        c(i) = tiny;
+        zt = p0;
+    end
     z(:,i) = zt;
 end
