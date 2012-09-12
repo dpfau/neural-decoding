@@ -21,7 +21,7 @@ for i = 1:length(orders)
     for j = 1:length(switches)
         fprintf( 'Evaluating switching AR(%i) model with %i states', orders(i), switches(j) );
         for k = 1:nRestart
-            [A Q T p0 mx] = switching_AR_EM( y, orders(i), switches(j) );
+            [A Q T p0 mx] = switching_AR_EM( y, orders(i), switches(j), 1 );
             foo = switching_AR_forward( y, A, Q, T, p0, mx );
             [~,c] = switching_AR_forward( z, A, Q, T, foo(:,end), mx ); % Cheating slightly by initializing where training data left off
             switching_ar_ll( i, j, k ) = mean( log( c ) );
